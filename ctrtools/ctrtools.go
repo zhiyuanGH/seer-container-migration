@@ -1,11 +1,15 @@
 package ctrtools
 
 import (
+    "archive/tar"
+    "bytes"
+    "compress/gzip"
     "context"
     "fmt"
-    "io/ioutil"
+    "io"
     "os"
     "os/exec"
+    "path/filepath"
 
     "google.golang.org/grpc"
     pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
@@ -31,13 +35,38 @@ func restoreContainer(checkpointData []byte) (string, error) {
 
     checkpointDir := fmt.Sprintf("/var/lib/docker/containers/%s/checkpoints/checkpoint1", newResp.ID)
     os.MkdirAll(checkpointDir, os.ModePerm)
-    if err := ioutil.WriteFile(checkpointDir+"/checkpoint.tar", checkpointData, os.ModePerm); err != nil {
+
+    buf := bytes.NewBuffer(checkpointData)
+    gz, err := gzip.NewReader(buf)
+    if err != nil {
         return "", err
     }
+    tarReader := tar.NewReader(gz)
 
-    cmd := exec.Command("tar", "-xvf", checkpointDir+"/checkpoint.tar", "-C", checkpointDir)
-    if err := cmd.Run(); err != nil {
-        return "", err
+    for {
+        hdr, err := tarReader.Next()
+        if err == io.EOF {
+            break
+        }
+        if err != nil {
+            return "", err
+        }
+
+        target := filepath.Join(checkpointDir, hdr.Name)
+        if hdr.Typeflag == tar.TypeDir {
+            if err := os.MkdirAll(target, os.ModePerm); err != nil {
+                return "", err
+            }
+        } else {
+            f, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY, os.FileMode(hdr.Mode))
+            if err != nil {
+                return "", err
+            }
+            if _, err := io.Copy(f, tarReader); err != nil {
+                return "", err
+            }
+            f.Close()
+        }
     }
 
     if err := cli.ContainerStart(context.Background(), newResp.ID, container.StartOptions{CheckpointID: "checkpoint1"}); err != nil {
