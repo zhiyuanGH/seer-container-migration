@@ -8,8 +8,8 @@ import (
 )
 
 func main() {
-    serverAddress := "source-host:50051"
-    containerID := "source-container-id"
+    serverAddress := "192.168.1.103:50051"
+    containerID := "loooper2"
 
     newContainerID, err := ctrtools.MigrateContainer(serverAddress, containerID)
     if err != nil {
