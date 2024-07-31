@@ -98,106 +98,83 @@ func PullImageIfNotExists(cli *client.Client, imageName string) error {
 // 	return newResp.ID, nil
 // }
 
-func restoreContainer(checkpointData []byte, volumeData []byte, volumeName string) (string, error) {
-    cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-    if err != nil {
-        return "", err
-    }
+func restoreContainer(checkpointData []byte, volumeName string) (string, error) {
+	fmt.Println("Starting restoreContainer function")
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return "", fmt.Errorf("error creating Docker client: %v", err)
+	}
 
-    imageName := "ghcr.io/stargz-containers/golang:1.18-esgz"
-    err = PullImageIfNotExists(cli, imageName)
-    if err != nil {
-        return "", err
-    }
+	imageName := "ghcr.io/stargz-containers/golang:1.18-esgz"
+	err = PullImageIfNotExists(cli, imageName)
+	if err != nil {
+		return "", fmt.Errorf("error pulling image: %v", err)
+	}
+	fmt.Println("Pulled image successfully")
 
-    newResp, err := cli.ContainerCreate(context.Background(), &container.Config{
-        Image: imageName,
-        Cmd:   []string{"sh", "-c", "i=0; while true; do echo $i; i=$((i+1)); sleep 1; done"},
-        Tty:   false,
-    }, &container.HostConfig{
-        Binds: []string{fmt.Sprintf("%s:/mnt/%s", volumeName, volumeName)},
-    }, nil, nil, "")
-    if err != nil {
-        return "", err
-    }
+	newResp, err := cli.ContainerCreate(context.Background(), &container.Config{
+		Image: imageName,
+		Cmd:   []string{"sh", "-c", "i=0; while true; do echo $i; i=$((i+1)); sleep 1; done"},
+		Tty:   false,
+	}, &container.HostConfig{
+		Binds: []string{fmt.Sprintf("%s:/data", volumeName)},
+	}, nil, nil, "")
+	if err != nil {
+		return "", fmt.Errorf("error creating container: %v", err)
+	}
+	fmt.Printf("Created container with ID: %s\n", newResp.ID)
 
-    checkpointDir := fmt.Sprintf("/var/lib/docker/containers/%s/checkpoints/checkpoint1", newResp.ID)
-    os.MkdirAll(checkpointDir, os.ModePerm)
+	checkpointDir := fmt.Sprintf("/var/lib/docker/containers/%s/checkpoints/checkpoint1", newResp.ID)
+	err = os.MkdirAll(checkpointDir, os.ModePerm)
+	if err != nil {
+		return "", fmt.Errorf("error creating checkpoint directory: %v", err)
+	}
+	fmt.Println("Created checkpoint directory successfully")
 
-    buf := bytes.NewBuffer(checkpointData)
-    gz, err := gzip.NewReader(buf)
-    if err != nil {
-        return "", err
-    }
-    tarReader := tar.NewReader(gz)
+	buf := bytes.NewBuffer(checkpointData)
+	gz, err := gzip.NewReader(buf)
+	if err != nil {
+		return "", fmt.Errorf("error creating gzip reader for checkpoint data: %v", err)
+	}
+	tarReader := tar.NewReader(gz)
 
-    for {
-        hdr, err := tarReader.Next()
-        if err == io.EOF {
-            break
-        }
-        if err != nil {
-            return "", err
-        }
+	for {
+		hdr, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return "", fmt.Errorf("error reading tar header: %v", err)
+		}
 
-        target := filepath.Join(checkpointDir, hdr.Name)
-        if hdr.Typeflag == tar.TypeDir {
-            if err := os.MkdirAll(target, os.ModePerm); err != nil {
-                return "", err
-            }
-        } else {
-            f, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY, os.FileMode(hdr.Mode))
-            if err != nil {
-                return "", err
-            }
-            if _, err := io.Copy(f, tarReader); err != nil {
-                return "", err
-            }
-            f.Close()
-        }
-    }
+		target := filepath.Join(checkpointDir, hdr.Name)
+		if hdr.Typeflag == tar.TypeDir {
+			err = os.MkdirAll(target, os.ModePerm)
+			if err != nil {
+				return "", fmt.Errorf("error creating directory in checkpoint: %v", err)
+			}
+		} else {
+			f, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY, os.FileMode(hdr.Mode))
+			if err != nil {
+				return "", fmt.Errorf("error opening file in checkpoint: %v", err)
+			}
+			_, err = io.Copy(f, tarReader)
+			if err != nil {
+				return "", fmt.Errorf("error copying data to file in checkpoint: %v", err)
+			}
+			f.Close()
+		}
+	}
+	fmt.Println("Extracted checkpoint data successfully")
 
-    volumeDir := fmt.Sprintf("/mnt/%s", volumeName)
-    os.MkdirAll(volumeDir, os.ModePerm)
 
-    buf = bytes.NewBuffer(volumeData)
-    gz, err = gzip.NewReader(buf)
-    if err != nil {
-        return "", err
-    }
-    tarReader = tar.NewReader(gz)
+	err = cli.ContainerStart(context.Background(), newResp.ID, container.StartOptions{CheckpointID: "checkpoint1"})
+	if err != nil {
+		return "", fmt.Errorf("error starting container: %v", err)
+	}
+	fmt.Printf("Container started successfully with ID: %s\n", newResp.ID)
 
-    for {
-        hdr, err := tarReader.Next()
-        if err == io.EOF {
-            break
-        }
-        if err != nil {
-            return "", err
-        }
-
-        target := filepath.Join(volumeDir, hdr.Name)
-        if hdr.Typeflag == tar.TypeDir {
-            if err := os.MkdirAll(target, os.ModePerm); err != nil {
-                return "", err
-            }
-        } else {
-            f, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY, os.FileMode(hdr.Mode))
-            if err != nil {
-                return "", err
-            }
-            if _, err := io.Copy(f, tarReader); err != nil {
-                return "", err
-            }
-            f.Close()
-        }
-    }
-
-    if err := cli.ContainerStart(context.Background(), newResp.ID, container.StartOptions{CheckpointID: "checkpoint1"}); err != nil {
-        return "", err
-    }
-
-    return newResp.ID, nil
+	return newResp.ID, nil
 }
 
 // currently MigrateContainerToLocalhost is more like to fetch a container from given address to local host
@@ -217,21 +194,23 @@ func MigrateContainerToLocalhost(serverAddress string, containerID string) (stri
     if err != nil {
         return "", fmt.Errorf("could not checkpoint container: %v", err)
     }
+    fmt.Printf("got checkpoint res")
 
     volReq := &pb.VolumeRequest{ContainerId: containerID}
     volRes, err := client.TransferVolume(context.Background(), volReq)
     if err != nil {
         return "", fmt.Errorf("could not transfer volume: %v", err)
     }
+    fmt.Printf("got volume res")
 
     volCreateErr := createVolumeFromData(volRes.VolumeName, volRes.VolumeData)
     if volCreateErr != nil {
         return "", fmt.Errorf("could not create volume: %v", volCreateErr)
     }
+    fmt.Printf("created volume")
 
 
-
-    newContainerID, err := restoreContainer(res.CheckpointData, volRes.VolumeData, volRes.VolumeName)
+    newContainerID, err := restoreContainer(res.CheckpointData,  volRes.VolumeName)
     if err != nil {
         return "", fmt.Errorf("could not restore container: %v", err)
     }
