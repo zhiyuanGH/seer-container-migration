@@ -42,7 +42,7 @@ func restoreContainer(checkpointData []byte) (string, error) {
         return "", err
     }
 
-    imageName := "busybox"
+    imageName := "ghcr.io/stargz-containers/golang:1.18-esgz"
     err = PullImageIfNotExists(cli, imageName)
     if err != nil {
         return "", err
