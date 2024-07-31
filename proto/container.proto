@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package migration;
 
-option go_package = "github.com/zhiyuanGH/container-joint-migration/pkg/migration;migration";
+option go_package = "pkg/migration;migration";
 
 service ContainerMigration {
     rpc CheckpointContainer (CheckpointRequest) returns (CheckpointResponse);
