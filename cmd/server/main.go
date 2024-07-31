@@ -86,6 +86,79 @@ func (s *server) CheckpointContainer(ctx context.Context, req *pb.CheckpointRequ
     return &pb.CheckpointResponse{CheckpointId: checkpointID, CheckpointData: buf.Bytes()}, nil
 }
 
+func (s *server) TransferVolume(ctx context.Context, req *pb.VolumeRequest) (*pb.VolumeResponse, error) {
+    cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+    if err != nil {
+        return nil, err
+    }
+
+    containerID := req.ContainerId
+    containerInfo, err := cli.ContainerInspect(ctx, containerID)
+    if err != nil {
+        return nil, err
+    }
+
+    var volumeName string
+    for _, mount := range containerInfo.Mounts {
+        if mount.Type == "volume" {
+            volumeName = mount.Name
+            break
+        }
+    }
+
+    if volumeName == "" {
+        return nil, fmt.Errorf("no volume found for container %s", containerID)
+    }
+
+    volume, err := cli.VolumeInspect(ctx, volumeName)
+    if err != nil {
+        return nil, err
+    }
+
+    volumeDir := volume.Mountpoint
+    var buf bytes.Buffer
+    gz := gzip.NewWriter(&buf)
+    tarWriter := tar.NewWriter(gz)
+
+    err = filepath.Walk(volumeDir, func(file string, fi os.FileInfo, err error) error {
+        if err != nil {
+            return err
+        }
+        hdr, err := tar.FileInfoHeader(fi, file)
+        if err != nil {
+            return err
+        }
+        hdr.Name = filepath.ToSlash(file[len(volumeDir):])
+        if err := tarWriter.WriteHeader(hdr); err != nil {
+            return err
+        }
+        if !fi.Mode().IsRegular() {
+            return nil
+        }
+        f, err := os.Open(file)
+        if err != nil {
+            return err
+        }
+        defer f.Close()
+        if _, err := io.Copy(tarWriter, f); err != nil {
+            return err
+        }
+        return nil
+    })
+    if err != nil {
+        return nil, err
+    }
+
+    if err := tarWriter.Close(); err != nil {
+        return nil, err
+    }
+    if err := gz.Close(); err != nil {
+        return nil, err
+    }
+
+    return &pb.VolumeResponse{VolumeName: volumeName, VolumeData: buf.Bytes()}, nil
+}
+
 func main() {
     lis, err := net.Listen("tcp4", "0.0.0.0:50051") // Use "tcp4" to force IPv4
     if err != nil {
