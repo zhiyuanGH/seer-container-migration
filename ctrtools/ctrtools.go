@@ -133,6 +133,19 @@ func MigrateContainer(serverAddress string, containerID string) (string, error) 
     return newContainerID, nil
 }
 
+// ResetSnapshotters resets the stargz and overlayfs snapshotters by performing the following steps:
+// 1. Stops all containers.
+// 2. Removes all containers.
+// 3. Prunes all images.
+// 4. Removes all images.
+// 5. Restarts the stargz-snapshotter service.
+// 6. Stops the stargz-snapshotter service.
+// 7. Clears stargz snapshotter data.
+// 8. Restarts the stargz-snapshotter service again.
+// 9. Clears overlayfs snapshotter data.
+// 10. Restarts the containerd service.
+// This function returns an error if any of the steps fail.
+
 func ResetSnapshotters() error {
     fmt.Println("Resetting stargz and overlayfs snapshotters...")
 
