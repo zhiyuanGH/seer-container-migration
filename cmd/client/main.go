@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 
@@ -8,10 +9,15 @@ import (
 )
 
 func main() {
-	serverAddress := "192.168.116.148:50051"
-	containerID := "loooper2"
+	// Define flags for server address and container ID with default values
+	serverAddress := flag.String("server", "192.168.116.148:50051", "Server address for container migration")
+	containerID := flag.String("container", "loooper2", "ID of the container to migrate")
 
-	newContainerID, err := ctrtools.MigrateContainerToLocalhost(serverAddress, containerID)
+	// Parse the flags
+	flag.Parse()
+
+	// Migrate the container using the provided or default server address and container ID
+	newContainerID, err := ctrtools.MigrateContainerToLocalhost(*serverAddress, *containerID)
 	if err != nil {
 		log.Fatalf("Container migration failed: %v", err)
 	}
