@@ -25,4 +25,5 @@ message VolumeRequest {
 message VolumeResponse {
     string volume_name = 1;
     bytes volume_data = 2;
+    string nfs_source = 3;
 }

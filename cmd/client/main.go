@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/zhiyuanGH/container-joint-migration/ctrtools"
+	"github.com/zhiyuanGH/container-joint-migration/Migration"
 )
 
 func main() {
@@ -17,7 +17,7 @@ func main() {
 	flag.Parse()
 
 	// Migrate the container using the provided or default server address and container ID
-	newContainerID, err := ctrtools.MigrateContainerToLocalhost(*serverAddress, *containerID)
+	newContainerID, err := Migration.MigrateContainerToLocalhost(*serverAddress, *containerID)
 	if err != nil {
 		log.Fatalf("Container migration failed: %v", err)
 	}

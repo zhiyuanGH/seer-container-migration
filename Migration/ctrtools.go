@@ -1,4 +1,4 @@
-package ctrtools
+package Migration
 
 import (
 	"archive/tar"
@@ -33,70 +33,6 @@ func PullImageIfNotExists(cli *client.Client, imageName string) error {
 	}
 	return nil
 }
-
-// func restoreContainer(checkpointData []byte) (string, error) {
-// 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	imageName := "ghcr.io/stargz-containers/golang:1.18-esgz"
-// 	err = PullImageIfNotExists(cli, imageName)
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	newResp, err := cli.ContainerCreate(context.Background(), &container.Config{
-// 		Image: imageName,
-// 		Cmd:   []string{"sh", "-c", "i=0; while true; do echo $i; i=$((i+1)); sleep 1; done"},
-// 		Tty:   false,
-// 	}, nil, nil, nil, "")
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	checkpointDir := fmt.Sprintf("/var/lib/docker/containers/%s/checkpoints/checkpoint1", newResp.ID)
-// 	os.MkdirAll(checkpointDir, os.ModePerm)
-
-// 	buf := bytes.NewBuffer(checkpointData)
-// 	gz, err := gzip.NewReader(buf)
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	tarReader := tar.NewReader(gz)
-
-// 	for {
-// 		hdr, err := tarReader.Next()
-// 		if err == io.EOF {
-// 			break
-// 		}
-// 		if err != nil {
-// 			return "", err
-// 		}
-
-// 		target := filepath.Join(checkpointDir, hdr.Name)
-// 		if hdr.Typeflag == tar.TypeDir {
-// 			if err := os.MkdirAll(target, os.ModePerm); err != nil {
-// 				return "", err
-// 			}
-// 		} else {
-// 			f, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY, os.FileMode(hdr.Mode))
-// 			if err != nil {
-// 				return "", err
-// 			}
-// 			if _, err := io.Copy(f, tarReader); err != nil {
-// 				return "", err
-// 			}
-// 			f.Close()
-// 		}
-// 	}
-
-// 	if err := cli.ContainerStart(context.Background(), newResp.ID, container.StartOptions{CheckpointID: "checkpoint1"}); err != nil {
-// 		return "", err
-// 	}
-
-// 	return newResp.ID, nil
-// }
 
 func restoreContainer(checkpointData []byte, volumeName string) (string, error) {
 	fmt.Println("Starting restoreContainer function")

@@ -1,4 +1,4 @@
-package ctrtools
+package Migration
 
 import (
 	"fmt"

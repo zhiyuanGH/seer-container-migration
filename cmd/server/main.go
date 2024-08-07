@@ -1,23 +1,25 @@
 package main
 
 import (
-    "archive/tar"
-    "bytes"
-    "compress/gzip"
-    "context"
-    "fmt"
-    "io"
-    "log"
-    "net"
-    "os"
-    "path/filepath"
-    "time"
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
+	"context"
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
 
-    "google.golang.org/grpc"
-    pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
+	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
+	"google.golang.org/grpc"
 
-    "github.com/docker/docker/api/types/checkpoint"
-    "github.com/docker/docker/client"
+	"github.com/docker/docker/api/types/checkpoint"
+	"github.com/docker/docker/client"
 )
 
 type server struct {
@@ -99,17 +101,24 @@ func (s *server) TransferVolume(ctx context.Context, req *pb.VolumeRequest) (*pb
     }
 
     var volumeName string
+    var nfsSource string
+
     for _, mount := range containerInfo.Mounts {
         if mount.Type == "volume" {
             volumeName = mount.Name
             break
         }
+        if mount.Type == "bind" {
+            source, err := getMountSource(mount.Source)
+            if err != nil {
+                return nil, err
+            }
+            nfsSource = source
+            break
+        }
     }
 
-    if volumeName == "" {
-        return nil, fmt.Errorf("no volume found for container %s", containerID)
-    }
-
+    if volumeName != "" {
     volume, err := cli.VolumeInspect(ctx, volumeName)
     if err != nil {
         return nil, err
@@ -157,6 +166,31 @@ func (s *server) TransferVolume(ctx context.Context, req *pb.VolumeRequest) (*pb
     }
 
     return &pb.VolumeResponse{VolumeName: volumeName, VolumeData: buf.Bytes()}, nil
+}
+return &pb.VolumeResponse{VolumeName: volumeName, NfsSource: nfsSource}, nil
+}
+
+func getMountSource(mountPoint string) (string, error) {
+	// Execute findmnt command
+	cmd := exec.Command("findmnt", "--output", "SOURCE", "--noheadings", mountPoint)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+
+	err := cmd.Run()
+	if err != nil {
+		return "", fmt.Errorf("failed to run findmnt: %v", err)
+	}
+
+	// Get the output and trim any extra whitespace
+	source := strings.TrimSpace(out.String())
+
+	// If no source is found, return an error
+	if source == "" {
+		return "", fmt.Errorf("no source found for mount point: %s", mountPoint)
+	}
+
+	return source, nil
 }
 
 func main() {
