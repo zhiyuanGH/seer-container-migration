@@ -133,11 +133,15 @@ func MigrateContainerToLocalhost(serverAddress string, containerID string) (stri
     fmt.Printf("got checkpoint res")
 
     volReq := &pb.VolumeRequest{ContainerId: containerID}
+	
     volRes, err := client.TransferVolume(context.Background(), volReq)
+
     if err != nil {
         return "", fmt.Errorf("could not transfer volume: %v", err)
     }
     fmt.Printf("got volume res")
+	volumeNameMsg := fmt.Sprintf("the volumename of the container is %s\nthe nfssource of the container is %s\nthe volumedestination of the container is %s", volRes.VolumeName, volRes.NfsSource, volRes.Destination)
+	fmt.Print(volumeNameMsg)
 
     volCreateErr := createVolumeFromData(volRes.VolumeName, volRes.VolumeData)
     if volCreateErr != nil {
