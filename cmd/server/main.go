@@ -109,7 +109,7 @@ func (s *server) TransferVolume(ctx context.Context, req *pb.VolumeRequest) (*pb
 	var destination string
 
 	for _, mount := range containerInfo.Mounts {
-
+		destination = mount.Destination // assign the value to destination
 		if mount.Type == "volume" {
 			volumeName = mount.Name
 			break
@@ -122,7 +122,7 @@ func (s *server) TransferVolume(ctx context.Context, req *pb.VolumeRequest) (*pb
 			nfsSource = source
 			break
 		}
-		destination = mount.Destination // assign the value to destination
+		
 	}
 
 	// If the container has a local volume, transfer the volume data
