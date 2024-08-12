@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
-    "github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 )
 
@@ -142,6 +141,9 @@ func MigrateContainerToLocalhost(serverAddress string, containerID string) (stri
     fmt.Printf("got volume res")
 	volumeNameMsg := fmt.Sprintf("the volumename of the container is %s\nthe nfssource of the container is %s\nthe volumedestination of the container is %s", volRes.VolumeName, volRes.NfsSource, volRes.Destination)
 	fmt.Print(volumeNameMsg)
+	
+
+
 
     volCreateErr := createVolumeFromData(volRes.VolumeName, volRes.VolumeData)
     if volCreateErr != nil {
@@ -163,54 +165,4 @@ func MigrateContainerToLocalhost(serverAddress string, containerID string) (stri
 }
 
 
-func createVolumeFromData(volumeName string, volumeData []byte) error {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return err
-	}
 
-	_, err = cli.VolumeCreate(context.Background(), volume.CreateOptions{
-		Name: volumeName,
-	})
-	if err != nil {
-		return err
-	}
-
-	volumeDir := fmt.Sprintf("/var/lib/docker/volumes/%s/_data", volumeName)
-	os.MkdirAll(volumeDir, os.ModePerm)
-
-	buf := bytes.NewBuffer(volumeData)
-	gz, err := gzip.NewReader(buf)
-	if err != nil {
-		return err
-	}
-	tarReader := tar.NewReader(gz)
-
-	for {
-		hdr, err := tarReader.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-
-		target := filepath.Join(volumeDir, hdr.Name)
-		if hdr.Typeflag == tar.TypeDir {
-			if err := os.MkdirAll(target, os.ModePerm); err != nil {
-				return err
-			}
-		} else {
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY, os.FileMode(hdr.Mode))
-			if err != nil {
-				return err
-			}
-			if _, err := io.Copy(f, tarReader); err != nil {
-				return err
-			}
-			f.Close()
-		}
-	}
-
-	return nil
-}
