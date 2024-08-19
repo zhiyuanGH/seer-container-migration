@@ -100,7 +100,7 @@ func (s *server) TransferVolume(ctx context.Context, req *pb.VolumeRequest) (*pb
 		return nil, err
 	}
 
-	var volumeName string //volumeName is only assigned if the container has a local volume
+	var volumeName string //volumeName is applicable for both local volume and nfs bind mount, but just has different names
 	var nfsSource string  //nfsSource is only assigned if the container has a nfs bind mount
 
 	if len(containerInfo.Mounts) == 0 {
@@ -176,6 +176,7 @@ func (s *server) TransferVolume(ctx context.Context, req *pb.VolumeRequest) (*pb
 
 		return &pb.VolumeResponse{VolumeName: volumeName, VolumeData: buf.Bytes(), Destination: destination}, nil
 	}
+
 	// If the container has a nfs bind mount, return the NFS source.
 	return &pb.VolumeResponse{VolumeName: volumeName, NfsSource: nfsSource, Destination: destination}, nil
 

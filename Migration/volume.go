@@ -1,61 +1,63 @@
 package Migration
+
 import (
-"github.com/docker/docker/api/types/volume"
-"github.com/docker/docker/client"
-"context"
-"fmt"
-"io"
-"os"
-"path/filepath"
-"archive/tar"
-"bytes"
-"compress/gzip"
-pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
-"os/exec"
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
+	"context"
+	"fmt"
+	"github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/client"
+	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
 )
 
 func Createvolume(volres *pb.VolumeResponse) (binds string, err error) {
 	if volres.NfsSource != "" {
-		return createVolumeFromNFS( volres)
+		return createVolumeFromNFS(volres)
 	}
 	return createVolumeFromData(volres)
 }
 
+
+
+//volumeName is 
 func createVolumeFromNFS(volres *pb.VolumeResponse) (binds string, err error) {
-    volumeName := volres.VolumeName
-    nfsSource := volres.NfsSource
+	volumeName := volres.VolumeName
+	nfsSource := volres.NfsSource
 
-    // Create the directory with sudo
-    mkdirCmd := exec.Command("sudo", "mkdir", volumeName)
-    if err := mkdirCmd.Run(); err != nil {
-        return "", fmt.Errorf("failed to create directory %s: %w", volumeName, err)
-    }
+	// Create the directory with sudo
+	mkdirCmd := exec.Command("sudo", "mkdir", volumeName)
+	if err := mkdirCmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to create directory %s: %w", volumeName, err)
+	}
 
-    // Execute the mount command
-    mountCmd := exec.Command("sudo", "mount", "-t", "nfs", nfsSource, volumeName)
-    if err := mountCmd.Run(); err != nil {
-        return "", fmt.Errorf("failed to mount NFS: %w", err)
-    }
+	// Execute the mount command
+	mountCmd := exec.Command("sudo", "mount", "-t", "nfs", nfsSource, volumeName)
+	if err := mountCmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to mount NFS: %w", err)
+	}
 
-    return fmt.Sprintf("%s:/%s", volres.NfsSource, volres.Destination), nil
+	return fmt.Sprintf("%s:/%s", volres.NfsSource, volres.Destination), nil
 }
 
-
-
-func createVolumeFromData(volres *pb.VolumeResponse) (binds string, err error ){
-volumeName := volres.VolumeName
-volumeData := volres.VolumeData
+func createVolumeFromData(volres *pb.VolumeResponse) (binds string, err error) {
+	volumeName := volres.VolumeName
+	volumeData := volres.VolumeData
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		return "",err
+		return "", err
 	}
 
 	_, err = cli.VolumeCreate(context.Background(), volume.CreateOptions{
 		Name: volumeName,
 	})
 	if err != nil {
-		return "",err
+		return "", err
 	}
 
 	volumeDir := fmt.Sprintf("/var/lib/docker/volumes/%s/_data", volumeName)
@@ -74,7 +76,7 @@ volumeData := volres.VolumeData
 			break
 		}
 		if err != nil {
-			return "",err
+			return "", err
 		}
 
 		target := filepath.Join(volumeDir, hdr.Name)
@@ -85,16 +87,14 @@ volumeData := volres.VolumeData
 		} else {
 			f, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY, os.FileMode(hdr.Mode))
 			if err != nil {
-				return"", err
+				return "", err
 			}
 			if _, err := io.Copy(f, tarReader); err != nil {
-				return "",err
+				return "", err
 			}
 			f.Close()
 		}
 	}
 
-	return fmt.Sprintf("%s:/%s",volumeName,volres.Destination),nil
+	return fmt.Sprintf("%s:/%s", volumeName, volres.Destination), nil
 }
-
-
