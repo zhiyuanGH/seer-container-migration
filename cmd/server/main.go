@@ -115,6 +115,7 @@ func (s *server) TransferVolume(ctx context.Context, req *pb.VolumeRequest) (*pb
 			break
 		}
 		if mount.Type == "bind" {
+			volumeName = mount.Source
 			source, err := getMountSource(mount.Source)
 			if err != nil {
 				return nil, err
@@ -122,11 +123,11 @@ func (s *server) TransferVolume(ctx context.Context, req *pb.VolumeRequest) (*pb
 			nfsSource = source
 			break
 		}
-		
+
 	}
 
 	// If the container has a local volume, transfer the volume data
-	if volumeName != "" {
+	if nfsSource == "" {
 		volume, err := cli.VolumeInspect(ctx, volumeName)
 		if err != nil {
 			return nil, err
@@ -173,10 +174,10 @@ func (s *server) TransferVolume(ctx context.Context, req *pb.VolumeRequest) (*pb
 			return nil, err
 		}
 
-		return &pb.VolumeResponse{VolumeName: volumeName, VolumeData: buf.Bytes(),Destination: destination}, nil
+		return &pb.VolumeResponse{VolumeName: volumeName, VolumeData: buf.Bytes(), Destination: destination}, nil
 	}
-	// If the container has a nfs bind mount, return the NFS source
-	return &pb.VolumeResponse{NfsSource: nfsSource, Destination: destination}, nil
+	// If the container has a nfs bind mount, return the NFS source.
+	return &pb.VolumeResponse{VolumeName: volumeName, NfsSource: nfsSource, Destination: destination}, nil
 
 }
 

@@ -11,21 +11,41 @@ import (
 "bytes"
 "compress/gzip"
 pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
+"os/exec"
 )
 
 func Createvolume(volres *pb.VolumeResponse) (binds string, err error) {
 	if volres.NfsSource != "" {
-		return createVolumeFromNFS( volres.NfsSource, volres.Destination)
+		return createVolumeFromNFS( volres)
 	}
-	return createVolumeFromData(volres.VolumeName, volres.VolumeData,volres.Destination)
+	return createVolumeFromData(volres)
 }
 
-func createVolumeFromNFS(NfsSource string, destination string) (binds string, err error){
-	return fmt.Sprintf("%s:/%s",NfsSource,destination),nil
+func createVolumeFromNFS(volres *pb.VolumeResponse) (binds string, err error) {
+    volumeName := volres.VolumeName
+    nfsSource := volres.NfsSource
+
+    // Create the directory with sudo
+    mkdirCmd := exec.Command("sudo", "mkdir", volumeName)
+    if err := mkdirCmd.Run(); err != nil {
+        return "", fmt.Errorf("failed to create directory %s: %w", volumeName, err)
+    }
+
+    // Execute the mount command
+    mountCmd := exec.Command("sudo", "mount", "-t", "nfs", nfsSource, volumeName)
+    if err := mountCmd.Run(); err != nil {
+        return "", fmt.Errorf("failed to mount NFS: %w", err)
+    }
+
+    return fmt.Sprintf("%s:/%s", volres.NfsSource, volres.Destination), nil
 }
 
 
-func createVolumeFromData(volumeName string, volumeData []byte, destination string) (binds string, err error ){
+
+func createVolumeFromData(volres *pb.VolumeResponse) (binds string, err error ){
+volumeName := volres.VolumeName
+volumeData := volres.VolumeData
+
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return "",err
@@ -74,5 +94,7 @@ func createVolumeFromData(volumeName string, volumeData []byte, destination stri
 		}
 	}
 
-	return fmt.Sprintf("%s:/%s",volumeName,destination),nil
+	return fmt.Sprintf("%s:/%s",volumeName,volres.Destination),nil
 }
+
+

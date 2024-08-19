@@ -149,7 +149,7 @@ func MigrateContainerToLocalhost(serverAddress string, containerID string) (stri
     if volCreateErr != nil {
         return "", fmt.Errorf("could not create volume: %v", volCreateErr)
     }
-    fmt.Printf(binds)
+	fmt.Print(binds)
 
 
     newContainerID, err := restoreContainer(res.CheckpointData,  volRes.VolumeName)
