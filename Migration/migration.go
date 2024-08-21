@@ -40,7 +40,7 @@ func restoreContainer(checkpointData []byte, volumeName string) (string, error) 
 		return "", fmt.Errorf("error creating Docker client: %v", err)
 	}
 
-	imageName := "ghcr.io/stargz-containers/golang:1.18-esgz"
+	imageName := "192.168.1.101:5000/mnist-rnn-image:org"
 	err = PullImageIfNotExists(cli, imageName)
 	if err != nil {
 		return "", fmt.Errorf("error pulling image: %v", err)
@@ -114,7 +114,10 @@ func restoreContainer(checkpointData []byte, volumeName string) (string, error) 
 
 // currently MigrateContainerToLocalhost is more like to fetch a container from given address to local host
 func MigrateContainerToLocalhost(serverAddress string, containerID string) (string, error) {
-    conn, err := grpc.Dial(serverAddress, grpc.WithInsecure())
+    conn, err := grpc.Dial(serverAddress, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
+		grpc.MaxCallRecvMsgSize(200 * 1024 * 1024),
+	))
+	
     if err != nil {
         return "", fmt.Errorf("did not connect: %v", err)
     }
