@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type ContainerMigrationClient interface {
 	CheckpointContainer(ctx context.Context, in *CheckpointRequest, opts ...grpc.CallOption) (*CheckpointResponse, error)
 	TransferVolume(ctx context.Context, in *VolumeRequest, opts ...grpc.CallOption) (*VolumeResponse, error)
+	TransferContainerInfo(ctx context.Context, in *ContainerInfoRequest, opts ...grpc.CallOption) (*ContainerInfoResponse, error)
 }
 
 type containerMigrationClient struct {
@@ -52,12 +53,22 @@ func (c *containerMigrationClient) TransferVolume(ctx context.Context, in *Volum
 	return out, nil
 }
 
+func (c *containerMigrationClient) TransferContainerInfo(ctx context.Context, in *ContainerInfoRequest, opts ...grpc.CallOption) (*ContainerInfoResponse, error) {
+	out := new(ContainerInfoResponse)
+	err := c.cc.Invoke(ctx, "/migration.ContainerMigration/TransferContainerInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ContainerMigrationServer is the server API for ContainerMigration service.
 // All implementations must embed UnimplementedContainerMigrationServer
 // for forward compatibility
 type ContainerMigrationServer interface {
 	CheckpointContainer(context.Context, *CheckpointRequest) (*CheckpointResponse, error)
 	TransferVolume(context.Context, *VolumeRequest) (*VolumeResponse, error)
+	TransferContainerInfo(context.Context, *ContainerInfoRequest) (*ContainerInfoResponse, error)
 	mustEmbedUnimplementedContainerMigrationServer()
 }
 
@@ -70,6 +81,9 @@ func (UnimplementedContainerMigrationServer) CheckpointContainer(context.Context
 }
 func (UnimplementedContainerMigrationServer) TransferVolume(context.Context, *VolumeRequest) (*VolumeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TransferVolume not implemented")
+}
+func (UnimplementedContainerMigrationServer) TransferContainerInfo(context.Context, *ContainerInfoRequest) (*ContainerInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TransferContainerInfo not implemented")
 }
 func (UnimplementedContainerMigrationServer) mustEmbedUnimplementedContainerMigrationServer() {}
 
@@ -120,6 +134,24 @@ func _ContainerMigration_TransferVolume_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ContainerMigration_TransferContainerInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ContainerInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContainerMigrationServer).TransferContainerInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/migration.ContainerMigration/TransferContainerInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContainerMigrationServer).TransferContainerInfo(ctx, req.(*ContainerInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ContainerMigration_ServiceDesc is the grpc.ServiceDesc for ContainerMigration service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -134,6 +166,10 @@ var ContainerMigration_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TransferVolume",
 			Handler:    _ContainerMigration_TransferVolume_Handler,
+		},
+		{
+			MethodName: "TransferContainerInfo",
+			Handler:    _ContainerMigration_TransferContainerInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

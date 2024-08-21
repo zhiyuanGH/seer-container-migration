@@ -5,7 +5,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
+	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
+	"google.golang.org/grpc"
 	"io"
 	"log"
 	"net"
@@ -14,9 +17,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
-	"google.golang.org/grpc"
 
 	"github.com/docker/docker/api/types/checkpoint"
 	"github.com/docker/docker/client"
@@ -86,6 +86,26 @@ func (s *server) CheckpointContainer(ctx context.Context, req *pb.CheckpointRequ
 	}
 
 	return &pb.CheckpointResponse{CheckpointId: checkpointID, CheckpointData: buf.Bytes()}, nil
+}
+
+func (s *server) TransferContainerInfo(ctx context.Context, req *pb.ContainerInfoRequest) (*pb.ContainerInfoResponse, error) {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return nil, err
+	}
+
+	containerInfo, err := cli.ContainerInspect(ctx, req.ContainerId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Marshal containerInfo into JSON
+	containerInfoJSON, err := json.Marshal(containerInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.ContainerInfoResponse{ContainerInfo: string(containerInfoJSON)}, nil
 }
 
 func (s *server) TransferVolume(ctx context.Context, req *pb.VolumeRequest) (*pb.VolumeResponse, error) {

@@ -11,11 +11,11 @@ import (
 	"path/filepath"
 	"time"
 
-	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
-	"google.golang.org/grpc"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
+	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
+	"google.golang.org/grpc"
 )
 
 // PullImageIfNotExists pulls the specified image if it does not exist locally
@@ -33,7 +33,7 @@ func PullImageIfNotExists(cli *client.Client, imageName string) error {
 	return nil
 }
 
-func restoreContainer(checkpointData []byte, volumeName string) (string, error) {
+func restoreContainer(checkpointData []byte, binds string) (string, error) {
 	fmt.Println("Starting restoreContainer function")
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -52,7 +52,7 @@ func restoreContainer(checkpointData []byte, volumeName string) (string, error) 
 		Cmd:   []string{"sh", "-c", "i=0; while true; do echo $i; i=$((i+1)); sleep 1; done"},
 		Tty:   false,
 	}, &container.HostConfig{
-		Binds: []string{fmt.Sprintf("%s:/data", volumeName)},
+		Binds: []string{binds},
 	}, nil, nil, "")
 	if err != nil {
 		return "", fmt.Errorf("error creating container: %v", err)
@@ -102,7 +102,6 @@ func restoreContainer(checkpointData []byte, volumeName string) (string, error) 
 	}
 	fmt.Println("Extracted checkpoint data successfully")
 
-
 	err = cli.ContainerStart(context.Background(), newResp.ID, container.StartOptions{CheckpointID: "checkpoint1"})
 	if err != nil {
 		return "", fmt.Errorf("error starting container: %v", err)
@@ -114,58 +113,51 @@ func restoreContainer(checkpointData []byte, volumeName string) (string, error) 
 
 // currently MigrateContainerToLocalhost is more like to fetch a container from given address to local host
 func MigrateContainerToLocalhost(serverAddress string, containerID string) (string, error) {
-    conn, err := grpc.Dial(serverAddress, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
-		grpc.MaxCallRecvMsgSize(200 * 1024 * 1024),
+	conn, err := grpc.Dial(serverAddress, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
+		grpc.MaxCallRecvMsgSize(200*1024*1024),
 	))
-	
-    if err != nil {
-        return "", fmt.Errorf("did not connect: %v", err)
-    }
-    defer conn.Close()
 
-    client := pb.NewContainerMigrationClient(conn)
+	if err != nil {
+		return "", fmt.Errorf("did not connect: %v", err)
+	}
+	defer conn.Close()
 
-    startTime := time.Now()
+	client := pb.NewContainerMigrationClient(conn)
 
-    req := &pb.CheckpointRequest{ContainerId: containerID}
-    res, err := client.CheckpointContainer(context.Background(), req)
-    if err != nil {
-        return "", fmt.Errorf("could not checkpoint container: %v", err)
-    }
-    fmt.Printf("got checkpoint res")
+	startTime := time.Now()
 
-    volReq := &pb.VolumeRequest{ContainerId: containerID}
-	
-    volRes, err := client.TransferVolume(context.Background(), volReq)
+	req := &pb.CheckpointRequest{ContainerId: containerID}
+	res, err := client.CheckpointContainer(context.Background(), req)
+	if err != nil {
+		return "", fmt.Errorf("could not checkpoint container: %v", err)
+	}
+	fmt.Printf("got checkpoint res")
 
-    if err != nil {
-        return "", fmt.Errorf("could not transfer volume: %v", err)
-    }
-    fmt.Printf("got volume res")
+	volReq := &pb.VolumeRequest{ContainerId: containerID}
+
+	volRes, err := client.TransferVolume(context.Background(), volReq)
+
+	if err != nil {
+		return "", fmt.Errorf("could not transfer volume: %v", err)
+	}
+	fmt.Printf("got volume res")
 	volumeNameMsg := fmt.Sprintf("the volumename of the container is %s\nthe nfssource of the container is %s\nthe volumedestination of the container is %s", volRes.VolumeName, volRes.NfsSource, volRes.Destination)
 	fmt.Print(volumeNameMsg)
-	
 
-
-
-    binds, volCreateErr := Createvolume(volRes)
-    if volCreateErr != nil {
-        return "", fmt.Errorf("could not create volume: %v", volCreateErr)
-    }
+	binds, volCreateErr := Createvolume(volRes)
+	if volCreateErr != nil {
+		return "", fmt.Errorf("could not create volume: %v", volCreateErr)
+	}
 	fmt.Print(binds)
 
+	newContainerID, err := restoreContainer(res.CheckpointData, binds)
+	if err != nil {
+		return "", fmt.Errorf("could not restore container: %v", err)
+	}
 
-    newContainerID, err := restoreContainer(res.CheckpointData,  volRes.VolumeName)
-    if err != nil {
-        return "", fmt.Errorf("could not restore container: %v", err)
-    }
+	endTime := time.Now()
+	elapsedTime := endTime.Sub(startTime)
+	fmt.Printf("Time taken from checkpointing container to finishing restore: %s\n", elapsedTime)
 
-    endTime := time.Now()
-    elapsedTime := endTime.Sub(startTime)
-    fmt.Printf("Time taken from checkpointing container to finishing restore: %s\n", elapsedTime)
-
-    return newContainerID, nil
+	return newContainerID, nil
 }
-
-
-

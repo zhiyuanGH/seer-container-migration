@@ -7,6 +7,7 @@ option go_package = "pkg/migration;migration";
 service ContainerMigration {
     rpc CheckpointContainer (CheckpointRequest) returns (CheckpointResponse);
     rpc TransferVolume (VolumeRequest) returns (VolumeResponse);
+    rpc TransferContainerInfo (ContainerInfoRequest) returns (ContainerInfoResponse);
 }
 
 message CheckpointRequest {
@@ -27,4 +28,12 @@ message VolumeResponse {
     bytes volume_data = 2;
     string nfs_source = 3;
     string destination = 4;
+}
+
+message ContainerInfoRequest {
+    string container_id = 1;
+}
+
+message ContainerInfoResponse {
+    string container_info=1;
 }
