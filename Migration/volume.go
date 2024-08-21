@@ -29,6 +29,21 @@ func createVolumeFromNFS(volres *pb.VolumeResponse) (binds string, err error) {
 	volumeName := volres.VolumeName
 	nfsSource := volres.NfsSource
 
+	// Check if the directory exists
+	if _, err := os.Stat(volumeName); !os.IsNotExist(err) {
+		// If it exists, unmount it
+		umountCmd := exec.Command("sudo", "umount", volumeName)
+		if err := umountCmd.Run(); err != nil {
+			return "", fmt.Errorf("failed to unmount directory %s: %w", volumeName, err)
+		}
+
+		// Remove the directory
+		removeCmd := exec.Command("sudo", "rm", "-rf", volumeName)
+		if err := removeCmd.Run(); err != nil {
+			return "", fmt.Errorf("failed to remove directory %s: %w", volumeName, err)
+		}
+	}
+
 	// Create the directory with sudo
 	mkdirCmd := exec.Command("sudo", "mkdir", volumeName)
 	if err := mkdirCmd.Run(); err != nil {
@@ -43,6 +58,7 @@ func createVolumeFromNFS(volres *pb.VolumeResponse) (binds string, err error) {
 
 	return fmt.Sprintf("%s:/%s", volres.NfsSource, volres.Destination), nil
 }
+
 
 func createVolumeFromData(volres *pb.VolumeResponse) (binds string, err error) {
 	volumeName := volres.VolumeName
