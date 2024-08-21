@@ -126,6 +126,9 @@ func MigrateContainerToLocalhost(serverAddress string, containerID string) (stri
 
 	startTime := time.Now()
 
+	infoReq := &pb.CheckpointRequest{ContainerId: containerID}
+	fmt.Println(infoReq)
+
 	req := &pb.CheckpointRequest{ContainerId: containerID}
 	res, err := client.CheckpointContainer(context.Background(), req)
 	if err != nil {
