@@ -56,7 +56,7 @@ func createVolumeFromNFS(volres *pb.VolumeResponse) (binds string, err error) {
 		return "", fmt.Errorf("failed to mount NFS: %w", err)
 	}
 
-	return fmt.Sprintf("%s:%s", volres.NfsSource, volres.Destination), nil
+	return fmt.Sprintf("%s:%s", volres.VolumeName, volres.Destination), nil
 }
 
 
