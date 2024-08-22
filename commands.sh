@@ -4,3 +4,4 @@ findmnt /mnt/nfs_share
 sudo mount 192.168.116.148:/srv/nfs/share /mnt/nfs_share
 sudo umount /mnt/nfs_share
 source /etc/profile
+protoc --go_out=. --go-grpc_out=. proto/container.proto

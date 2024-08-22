@@ -105,7 +105,7 @@ func (s *server) TransferContainerInfo(ctx context.Context, req *pb.ContainerInf
 		return nil, err
 	}
 
-	return &pb.ContainerInfoResponse{ContainerInfo: string(containerInfoJSON)}, nil
+	return &pb.ContainerInfoResponse{ContainerInfo: containerInfoJSON}, nil
 }
 
 func (s *server) TransferVolume(ctx context.Context, req *pb.VolumeRequest) (*pb.VolumeResponse, error) {

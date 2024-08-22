@@ -35,5 +35,5 @@ message ContainerInfoRequest {
 }
 
 message ContainerInfoResponse {
-    string container_info=1;
+    bytes container_info=1;
 }

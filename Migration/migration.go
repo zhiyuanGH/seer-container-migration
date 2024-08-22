@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"github.com/docker/docker/api/types"
+	"encoding/json"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
@@ -131,7 +133,16 @@ func MigrateContainerToLocalhost(serverAddress string, containerID string) (stri
 	if err != nil {
 		return "", fmt.Errorf("could not checkpoint container: %v", err)
 	}
-	fmt.Printf(infoRes.ContainerInfo)
+	var containerInfo types.ContainerJSON
+	err = json.Unmarshal(infoRes.ContainerInfo, &containerInfo)
+	if err != nil {
+		return "", fmt.Errorf("could not unmarshal container info: %v", err)
+	}
+	fmt.Printf("Container Name: %s\n", containerInfo.Name)
+	fmt.Printf("Container Image: %s\n", containerInfo.Config.Image)
+	fmt.Printf("Container State: %s\n", containerInfo.State.Status)
+
+
 
 	req := &pb.CheckpointRequest{ContainerId: containerID}
 	res, err := client.CheckpointContainer(context.Background(), req)
