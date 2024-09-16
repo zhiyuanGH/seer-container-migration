@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
+	"github.com/zhiyuanGH/container-joint-migration/utils"
 	"io"
 	"os"
 	"os/exec"
@@ -22,21 +23,26 @@ func Createvolume(volres *pb.VolumeResponse) (binds string, err error) {
 	return createVolumeFromData(volres)
 }
 
-
-
-//volumeName is 
+// volumeName is
 func createVolumeFromNFS(volres *pb.VolumeResponse) (binds string, err error) {
 	volumeName := volres.VolumeName
 	nfsSource := volres.NfsSource
 
-	// Check if the directory exists
-	if _, err := os.Stat(volumeName); !os.IsNotExist(err) {
-		// If it exists, unmount it
+	source, err := utils.GetMountSource(volumeName)
+	if err != nil {
+		return "", fmt.Errorf("cannot find mount of %s on the dest host:%w", volumeName, err)
+	}
+	// Check if the directory is already mounted
+	if source != "" {
+		// Unmount the directory
 		umountCmd := exec.Command("sudo", "umount", volumeName)
 		if err := umountCmd.Run(); err != nil {
 			return "", fmt.Errorf("failed to unmount directory %s: %w", volumeName, err)
 		}
+	}
 
+	// Check if the directory exists
+	if _, err := os.Stat(volumeName); !os.IsNotExist(err) {
 		// Remove the directory
 		removeCmd := exec.Command("sudo", "rm", "-rf", volumeName)
 		if err := removeCmd.Run(); err != nil {
@@ -58,7 +64,6 @@ func createVolumeFromNFS(volres *pb.VolumeResponse) (binds string, err error) {
 
 	return fmt.Sprintf("%s:%s", volres.VolumeName, volres.Destination), nil
 }
-
 
 func createVolumeFromData(volres *pb.VolumeResponse) (binds string, err error) {
 	volumeName := volres.VolumeName
