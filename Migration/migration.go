@@ -5,13 +5,13 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/docker/docker/api/types"
 	"io"
 	"os"
 	"path/filepath"
 	"time"
-	"github.com/docker/docker/api/types"
-	"encoding/json"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
@@ -35,14 +35,14 @@ func PullImageIfNotExists(cli *client.Client, imageName string) error {
 	return nil
 }
 
-func restoreContainer(checkpointData []byte, binds string) (string, error) {
+func restoreContainer(checkpointData []byte, image string, name string, binds string) (string, error) {
 	fmt.Println("Starting restoreContainer function")
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return "", fmt.Errorf("error creating Docker client: %v", err)
 	}
 
-	imageName := "192.168.1.101:5000/mnist-rnn-image:org"
+	imageName := image
 	err = PullImageIfNotExists(cli, imageName)
 	if err != nil {
 		return "", fmt.Errorf("error pulling image: %v", err)
@@ -55,11 +55,11 @@ func restoreContainer(checkpointData []byte, binds string) (string, error) {
 		Tty:   false,
 	}, &container.HostConfig{
 		Binds: []string{binds},
-	}, nil, nil, "")
+	}, nil, nil, name) // Pass the name parameter here
 	if err != nil {
 		return "", fmt.Errorf("error creating container: %v", err)
 	}
-	fmt.Printf("Created container with ID: %s\n", newResp.ID)
+	fmt.Printf("Created container with ID: %s and Name: %s\n", newResp.ID, name)
 
 	checkpointDir := fmt.Sprintf("/var/lib/docker/containers/%s/checkpoints/checkpoint1", newResp.ID)
 	err = os.MkdirAll(checkpointDir, os.ModePerm)
@@ -129,7 +129,7 @@ func MigrateContainerToLocalhost(serverAddress string, containerID string) (stri
 	startTime := time.Now()
 
 	infoReq := &pb.ContainerInfoRequest{ContainerId: containerID}
-	infoRes,err :=client.TransferContainerInfo(context.Background(), infoReq)
+	infoRes, err := client.TransferContainerInfo(context.Background(), infoReq)
 	if err != nil {
 		return "", fmt.Errorf("could not checkpoint container: %v", err)
 	}
@@ -141,8 +141,6 @@ func MigrateContainerToLocalhost(serverAddress string, containerID string) (stri
 	fmt.Printf("Container Name: %s\n", containerInfo.Name)
 	fmt.Printf("Container Image: %s\n", containerInfo.Config.Image)
 	fmt.Printf("Container State: %s\n", containerInfo.State.Status)
-
-
 
 	req := &pb.CheckpointRequest{ContainerId: containerID}
 	res, err := client.CheckpointContainer(context.Background(), req)
@@ -168,7 +166,7 @@ func MigrateContainerToLocalhost(serverAddress string, containerID string) (stri
 	}
 	fmt.Print(binds)
 
-	newContainerID, err := restoreContainer(res.CheckpointData, binds)
+	newContainerID, err := restoreContainer(res.CheckpointData, containerInfo.Image, containerInfo.Name, binds)
 	if err != nil {
 		return "", fmt.Errorf("could not restore container: %v", err)
 	}
