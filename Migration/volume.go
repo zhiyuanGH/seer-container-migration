@@ -6,14 +6,15 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types/volume"
-	"github.com/docker/docker/client"
-	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
-	"github.com/zhiyuanGH/container-joint-migration/utils"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/client"
+	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
+	"github.com/zhiyuanGH/container-joint-migration/utils"
 )
 
 func Createvolume(volres *pb.VolumeResponse) (binds string, err error) {
@@ -29,9 +30,11 @@ func createVolumeFromNFS(volres *pb.VolumeResponse) (binds string, err error) {
 	nfsSource := volres.NfsSource
 
 	source, err := utils.GetMountSource(volumeName)
+
 	if err != nil {
-		return "", fmt.Errorf("cannot find mount of %s on the dest host:%w", volumeName, err)
+		fmt.Printf("Cannot find mount on the destination host, so dont need to delete it: %v\n", err)
 	}
+
 	// Check if the directory is already mounted
 	if source != "" {
 		// Unmount the directory
