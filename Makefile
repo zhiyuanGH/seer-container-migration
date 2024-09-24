@@ -1,10 +1,10 @@
 # Define the output binaries
-SERVER_BINARY=server
-CLIENT_BINARY=client
+SERVER_BINARY=ectrserver
+CLIENT_BINARY=ectr
 
 # Define the source directories
 SERVER_SRC=./cmd/server/main.go
-CLIENT_SRC=./cmd/client/main.go
+CLIENT_SRC=./cmd/cli/main.go
 
 # Default target
 all: build

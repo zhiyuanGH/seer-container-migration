@@ -175,3 +175,89 @@ var ContainerMigration_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "proto/container.proto",
 }
+
+// PullContainerClient is the client API for PullContainer service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type PullContainerClient interface {
+	PullContainer(ctx context.Context, in *PullRequest, opts ...grpc.CallOption) (*PullResponse, error)
+}
+
+type pullContainerClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewPullContainerClient(cc grpc.ClientConnInterface) PullContainerClient {
+	return &pullContainerClient{cc}
+}
+
+func (c *pullContainerClient) PullContainer(ctx context.Context, in *PullRequest, opts ...grpc.CallOption) (*PullResponse, error) {
+	out := new(PullResponse)
+	err := c.cc.Invoke(ctx, "/migration.PullContainer/PullContainer", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PullContainerServer is the server API for PullContainer service.
+// All implementations must embed UnimplementedPullContainerServer
+// for forward compatibility
+type PullContainerServer interface {
+	PullContainer(context.Context, *PullRequest) (*PullResponse, error)
+	mustEmbedUnimplementedPullContainerServer()
+}
+
+// UnimplementedPullContainerServer must be embedded to have forward compatible implementations.
+type UnimplementedPullContainerServer struct {
+}
+
+func (UnimplementedPullContainerServer) PullContainer(context.Context, *PullRequest) (*PullResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PullContainer not implemented")
+}
+func (UnimplementedPullContainerServer) mustEmbedUnimplementedPullContainerServer() {}
+
+// UnsafePullContainerServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to PullContainerServer will
+// result in compilation errors.
+type UnsafePullContainerServer interface {
+	mustEmbedUnimplementedPullContainerServer()
+}
+
+func RegisterPullContainerServer(s grpc.ServiceRegistrar, srv PullContainerServer) {
+	s.RegisterService(&PullContainer_ServiceDesc, srv)
+}
+
+func _PullContainer_PullContainer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PullRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PullContainerServer).PullContainer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/migration.PullContainer/PullContainer",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PullContainerServer).PullContainer(ctx, req.(*PullRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// PullContainer_ServiceDesc is the grpc.ServiceDesc for PullContainer service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var PullContainer_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "migration.PullContainer",
+	HandlerType: (*PullContainerServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "PullContainer",
+			Handler:    _PullContainer_PullContainer_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "proto/container.proto",
+}

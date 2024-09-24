@@ -7,11 +7,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/docker/docker/api/types"
 	"io"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/docker/docker/api/types"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
@@ -113,9 +114,10 @@ func restoreContainer(checkpointData []byte, image string, name string, binds st
 	return newResp.ID, nil
 }
 
-// currently MigrateContainerToLocalhost is more like to fetch a container from given address to local host
-func MigrateContainerToLocalhost(serverAddress string, containerID string) (string, error) {
-	conn, err := grpc.Dial(serverAddress, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
+// currently PullContainerToLocalhost is more like to fetch a container from given address to local host
+func PullContainerToLocalhost(ip string, port string, containerID string) (string, error) {
+	addr := ip + ":" + port
+	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
 		grpc.MaxCallRecvMsgSize(200*1024*1024),
 	))
 

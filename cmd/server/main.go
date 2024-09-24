@@ -7,8 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
-	"google.golang.org/grpc"
+
 	"io"
 	"log"
 	"net"
@@ -20,10 +19,30 @@ import (
 
 	"github.com/docker/docker/api/types/checkpoint"
 	"github.com/docker/docker/client"
+	"github.com/zhiyuanGH/container-joint-migration/Migration"
+	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
+	"google.golang.org/grpc"
 )
 
 type server struct {
 	pb.UnimplementedContainerMigrationServer
+	pb.UnimplementedPullContainerServer
+}
+
+func (s *server) PullContainer(ctx context.Context, req *pb.PullRequest) (*pb.PullResponse, error) {
+
+	ip := req.DestinationIp
+	port := req.DestinationPort
+	containerName := req.ContainerName
+
+	newContainerID, err := Migration.PullContainerToLocalhost(ip, port, containerName)
+	if err != nil {
+		log.Fatalf("Container migration failed: %v", err)
+		return &pb.PullResponse{ContainerId: containerName, Success: false}, err
+	}
+
+	fmt.Printf("New container restored with ID: %s\n", newContainerID) // revise to log 
+	return &pb.PullResponse{ContainerId: newContainerID, Success: true}, nil
 }
 
 func (s *server) CheckpointContainer(ctx context.Context, req *pb.CheckpointRequest) (*pb.CheckpointResponse, error) {
@@ -240,5 +259,3 @@ func main() {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
-
-//hi

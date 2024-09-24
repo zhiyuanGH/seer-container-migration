@@ -10,6 +10,21 @@ service ContainerMigration {
     rpc TransferContainerInfo (ContainerInfoRequest) returns (ContainerInfoResponse);
 }
 
+service PullContainer {
+    rpc PullContainer (PullRequest) returns (PullResponse);
+}
+
+message PullRequest {
+    string container_name = 1;
+    string destination_ip = 2;
+    string destination_port = 3;
+}
+
+message PullResponse {
+    bool success = 1;
+    string container_id = 2;
+}
+
 message CheckpointRequest {
     string container_id = 1;
 }
