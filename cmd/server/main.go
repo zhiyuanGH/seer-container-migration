@@ -244,7 +244,7 @@ func getMountSource(mountPoint string) (string, error) {
 }
 
 func main() {
-	lis, err := net.Listen("tcp4", "0.0.0.0:50051") // Use "tcp4" to force IPv4
+	lis, err := net.Listen("tcp4", "0.0.0.0:50051")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
@@ -252,7 +252,11 @@ func main() {
 	grpcServer := grpc.NewServer(
 		grpc.MaxRecvMsgSize(200 * 1024 * 1024),
 	)
+	
+	// Register both services
 	pb.RegisterContainerMigrationServer(grpcServer, &server{})
+	pb.RegisterPullContainerServer(grpcServer, &server{}) // Register PullContainer service
+
 	log.Printf("Server listening at %v", lis.Addr())
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

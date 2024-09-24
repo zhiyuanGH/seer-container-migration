@@ -15,9 +15,7 @@ func main() {
 	// Define flags for server address and container ID with default values
 	src := flag.String("src", "192.168.116.148:50051", "Server address for source host ")
 	dst := flag.String("dst", "192.168.116.149:50051", "Server address for destination host")
-
-
-	containerName := flag.String("container", "loooper2", "ID of the container to migrate")
+	containerName := flag.String("container", "cnn", "ID of the container to migrate")
 
 	// Parse the flags
 	flag.Parse()
