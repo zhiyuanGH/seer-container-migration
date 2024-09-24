@@ -10,14 +10,15 @@ service ContainerMigration {
     rpc TransferContainerInfo (ContainerInfoRequest) returns (ContainerInfoResponse);
 }
 
+//pullContainer to local host(dst of migration) from remote host(src of migration)
 service PullContainer {
     rpc PullContainer (PullRequest) returns (PullResponse);
 }
 
 message PullRequest {
     string container_name = 1;
-    string destination_ip = 2;
-    string destination_port = 3;
+    string destination_addr = 2;
+
 }
 
 message PullResponse {

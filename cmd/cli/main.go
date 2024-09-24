@@ -13,17 +13,21 @@ import (
 
 func main() {
 	// Define flags for server address and container ID with default values
-	serverIp := flag.String("ip", "192.168.116.148", "Server address for container migration")
+	src := flag.String("src", "192.168.116.148:50051", "Server address for source host ")
+	dst := flag.String("dst", "192.168.116.149:50051", "Server address for destination host")
+
+
 	containerName := flag.String("container", "loooper2", "ID of the container to migrate")
-	serverPort := flag.String("port", "50051", "Server port for container migration")
 
 	// Parse the flags
 	flag.Parse()
 
 	// Migrate the container using the provided or default server address and container ID
-	addr := *serverIp + ":" + *serverPort
-	req := &pb.PullRequest{DestinationIp: *serverIp, DestinationPort: *serverPort, ContainerName: *containerName}
-	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
+	
+	req := &pb.PullRequest{DestinationAddr: *src, ContainerName: *containerName}
+
+	// should dial the destination server to let it pull container from source server
+	conn, err := grpc.Dial(*dst, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
 		grpc.MaxCallRecvMsgSize(200*1024*1024),
 	))
 	if err != nil {

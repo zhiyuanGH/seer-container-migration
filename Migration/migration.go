@@ -115,8 +115,8 @@ func restoreContainer(checkpointData []byte, image string, name string, binds st
 }
 
 // currently PullContainerToLocalhost is more like to fetch a container from given address to local host
-func PullContainerToLocalhost(ip string, port string, containerID string) (string, error) {
-	addr := ip + ":" + port
+func PullContainerToLocalhost(addr string, containerID string) (string, error) {
+
 	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
 		grpc.MaxCallRecvMsgSize(200*1024*1024),
 	))

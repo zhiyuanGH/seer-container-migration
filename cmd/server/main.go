@@ -31,11 +31,10 @@ type server struct {
 
 func (s *server) PullContainer(ctx context.Context, req *pb.PullRequest) (*pb.PullResponse, error) {
 
-	ip := req.DestinationIp
-	port := req.DestinationPort
+	addr := req.DestinationAddr
 	containerName := req.ContainerName
 
-	newContainerID, err := Migration.PullContainerToLocalhost(ip, port, containerName)
+	newContainerID, err := Migration.PullContainerToLocalhost(addr, containerName)
 	if err != nil {
 		log.Fatalf("Container migration failed: %v", err)
 		return &pb.PullResponse{ContainerId: containerName, Success: false}, err
