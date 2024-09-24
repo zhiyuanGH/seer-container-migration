@@ -43,7 +43,8 @@ func restoreContainer(checkpointData []byte, image string, name string, binds st
 		return "", fmt.Errorf("error creating Docker client: %v", err)
 	}
 
-	imageName := image
+	fmt.Println("the image name is: ", image, "but we expect a name rather than the id")
+	imageName := "192.168.116.150:5000/mnist-rnn-image:org"
 	err = PullImageIfNotExists(cli, imageName)
 	if err != nil {
 		return "", fmt.Errorf("error pulling image: %v", err)
