@@ -108,6 +108,8 @@ func (s *server) CheckpointContainer(ctx context.Context, req *pb.CheckpointRequ
 }
 
 func (s *server) TransferContainerInfo(ctx context.Context, req *pb.ContainerInfoRequest) (*pb.ContainerInfoResponse, error) {
+	
+	fmt.Printf("Received request to migrate container: %s\n", req.ContainerId)
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, err
