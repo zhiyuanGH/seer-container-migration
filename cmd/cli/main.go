@@ -21,7 +21,7 @@ func main() {
 	flag.Parse()
 
 	// Migrate the container using the provided or default server address and container ID
-	
+
 	req := &pb.PullRequest{DestinationAddr: *src, ContainerName: *containerName}
 
 	// should dial the destination server to let it pull container from source server
@@ -29,16 +29,15 @@ func main() {
 		grpc.MaxCallRecvMsgSize(200*1024*1024),
 	))
 	if err != nil {
-		fmt.Printf("did not connect: %v", err)
+		fmt.Printf("did not connect: %v\n", err)
 	}
 	defer conn.Close()
 
 	client := pb.NewPullContainerClient(conn)
 	res, err := client.PullContainer(context.Background(), req)
 	if err != nil {
-		fmt.Printf("Container migration failed: %v", err)
+		fmt.Printf("Container migration failed: %v\n", err)
 	}
-	fmt.Printf("New container restored with ID: %s\n", res.ContainerId)
+	fmt.Printf("New container restored on %s with ID: %s\n", *dst, res.ContainerId)
 
 }
-

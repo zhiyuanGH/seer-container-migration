@@ -31,6 +31,7 @@ type server struct {
 
 func (s *server) PullContainer(ctx context.Context, req *pb.PullRequest) (*pb.PullResponse, error) {
 
+	fmt.Printf("Received request to pull container from: %s", req.DestinationAddr)
 	addr := req.DestinationAddr
 	containerName := req.ContainerName
 

@@ -37,7 +37,7 @@ func PullImageIfNotExists(cli *client.Client, imageName string) error {
 }
 
 func restoreContainer(checkpointData []byte, image string, name string, binds string) (string, error) {
-	fmt.Println("Starting restoreContainer function")
+	fmt.Printf("Starting restore container %s with image %s\n", name, image)
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return "", fmt.Errorf("error creating Docker client: %v", err)
@@ -47,7 +47,7 @@ func restoreContainer(checkpointData []byte, image string, name string, binds st
 	if err != nil {
 		return "", fmt.Errorf("error pulling image: %v", err)
 	}
-	fmt.Println("Pulled image successfully")
+	fmt.Printf("Pulled image %s successfully \n", image)
 
 	newResp, err := cli.ContainerCreate(context.Background(), &container.Config{
 		Image: image,
@@ -66,7 +66,7 @@ func restoreContainer(checkpointData []byte, image string, name string, binds st
 	if err != nil {
 		return "", fmt.Errorf("error creating checkpoint directory: %v", err)
 	}
-	fmt.Println("Created checkpoint directory successfully")
+	fmt.Print("Created checkpoint directory successfully\n")
 
 	buf := bytes.NewBuffer(checkpointData)
 	gz, err := gzip.NewReader(buf)
@@ -148,7 +148,7 @@ func PullContainerToLocalhost(addr string, containerID string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("could not checkpoint container: %v", err)
 	}
-	fmt.Printf("got checkpoint res")
+	fmt.Print("got checkpoint res \n")
 
 	volReq := &pb.VolumeRequest{ContainerId: containerID}
 
@@ -157,21 +157,18 @@ func PullContainerToLocalhost(addr string, containerID string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("could not transfer volume: %v", err)
 	}
-	fmt.Printf("got volume res")
-	volumeNameMsg := fmt.Sprintf("the volumename of the container is %s\nthe nfssource of the container is %s\nthe volumedestination of the container is %s", volRes.VolumeName, volRes.NfsSource, volRes.Destination)
-	fmt.Print(volumeNameMsg)
+	fmt.Printf("got volume res \n")
 
 	binds, volCreateErr := Createvolume(volRes)
 	if volCreateErr != nil {
 		return "", fmt.Errorf("could not create volume: %v", volCreateErr)
 	}
-	fmt.Print(binds)
 
 	newContainerID, err := restoreContainer(res.CheckpointData, containerInfo.Config.Image, containerInfo.Name, binds)
 	if err != nil {
 		return "", fmt.Errorf("could not restore container: %v", err)
 	}
-
+	
 	endTime := time.Now()
 	elapsedTime := endTime.Sub(startTime)
 	fmt.Printf("Time taken from checkpointing container to finishing restore: %s\n", elapsedTime)
