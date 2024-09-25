@@ -43,16 +43,14 @@ func restoreContainer(checkpointData []byte, image string, name string, binds st
 		return "", fmt.Errorf("error creating Docker client: %v", err)
 	}
 
-	fmt.Println("the image name is: ", image, "but we expect a name rather than the id")
-	imageName := "192.168.116.150:5000/mnist-rnn-image:org"
-	err = PullImageIfNotExists(cli, imageName)
+	err = PullImageIfNotExists(cli, image)
 	if err != nil {
 		return "", fmt.Errorf("error pulling image: %v", err)
 	}
 	fmt.Println("Pulled image successfully")
 
 	newResp, err := cli.ContainerCreate(context.Background(), &container.Config{
-		Image: imageName,
+		Image: image,
 		Cmd:   []string{"sh", "-c", "i=0; while true; do echo $i; i=$((i+1)); sleep 1; done"},
 		Tty:   false,
 	}, &container.HostConfig{
@@ -169,7 +167,7 @@ func PullContainerToLocalhost(addr string, containerID string) (string, error) {
 	}
 	fmt.Print(binds)
 
-	newContainerID, err := restoreContainer(res.CheckpointData, containerInfo.Image, containerInfo.Name, binds)
+	newContainerID, err := restoreContainer(res.CheckpointData, containerInfo.Config.Image, containerInfo.Name, binds)
 	if err != nil {
 		return "", fmt.Errorf("could not restore container: %v", err)
 	}
