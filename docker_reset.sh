@@ -7,7 +7,7 @@ sleep 1
 
 # Prune Docker system data with confirmation
 echo "Pruning Docker system data..."
-sudo docker system prune -af
+sudo docker system prune -f
 sleep 1
 
 # Restart Docker service again
