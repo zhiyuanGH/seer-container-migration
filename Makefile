@@ -6,6 +6,9 @@ CLIENT_BINARY=ectr
 SERVER_SRC=./cmd/server/main.go
 CLIENT_SRC=./cmd/cli/main.go
 
+# Define the installation directory
+INSTALL_DIR=/usr/local/bin
+
 # Default target
 all: build
 
@@ -24,4 +27,10 @@ build-client:
 clean:
 	rm -f $(SERVER_BINARY) $(CLIENT_BINARY)
 
-.PHONY: all build build-server build-client clean
+# Install the binaries to the system's bin directory
+install: build
+	cp $(SERVER_BINARY) $(INSTALL_DIR)
+	cp $(CLIENT_BINARY) $(INSTALL_DIR)
+
+.PHONY: all build build-server build-client clean install
+
