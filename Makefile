@@ -1,10 +1,12 @@
 # Define the output binaries
 SERVER_BINARY=ectrserver
 CLIENT_BINARY=ectr
+EXP_COLLECT_PF_BINARY=ectrpf
 
 # Define the source directories
 SERVER_SRC=./cmd/ectrserver/main.go
 CLIENT_SRC=./cmd/ectr/main.go
+EXP_COLLECT_PF_SRC =./cmd/exp_collect_pf/main.go
 
 # Define the installation directory
 INSTALL_DIR=/usr/local/bin
@@ -13,7 +15,11 @@ INSTALL_DIR=/usr/local/bin
 all: build
 
 # Build both server and client
-build: build-server build-client
+build: build-server build-client build-exp-collect-pf
+
+# Build the exp_collect_pf binary
+build-exp-collect-pf:
+	go build -o $(EXP_COLLECT_PF_BINARY) $(EXP_COLLECT_PF_SRC)
 
 # Build the server binary
 build-server:
@@ -31,6 +37,7 @@ clean:
 install: build
 	cp $(SERVER_BINARY) $(INSTALL_DIR)
 	cp $(CLIENT_BINARY) $(INSTALL_DIR)
+	cp $(EXP_COLLECT_PF_BINARY) $(INSTALL_DIR)
 
 .PHONY: all build build-server build-client clean install
 
