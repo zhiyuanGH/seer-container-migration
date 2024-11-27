@@ -3,8 +3,8 @@ SERVER_BINARY=ectrserver
 CLIENT_BINARY=ectr
 
 # Define the source directories
-SERVER_SRC=./cmd/server/main.go
-CLIENT_SRC=./cmd/cli/main.go
+SERVER_SRC=./cmd/ectrserver/main.go
+CLIENT_SRC=./cmd/ectr/main.go
 
 # Define the installation directory
 INSTALL_DIR=/usr/local/bin

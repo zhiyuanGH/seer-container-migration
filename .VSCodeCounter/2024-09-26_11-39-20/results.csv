@@ -1,0 +1,21 @@
+"filename", "language", "Protocol Buffers", "Go", "Markdown", "Shell Script", "Go Module File", "Makefile", "Go Checksum File", "comment", "blank", "total"
+"/home/base/code/container-joint-migration/Makefile", "Makefile", 0, 0, 0, 0, 0, 13, 0, 7, 8, 28
+"/home/base/code/container-joint-migration/Migration/migration.go", "Go", 0, 157, 0, 0, 0, 0, 0, 2, 30, 189
+"/home/base/code/container-joint-migration/Migration/reset.go", "Go", 0, 102, 0, 0, 0, 0, 0, 3, 18, 123
+"/home/base/code/container-joint-migration/Migration/utils.go", "Go", 0, 3, 0, 0, 0, 0, 0, 0, 3, 6
+"/home/base/code/container-joint-migration/Migration/volume.go", "Go", 0, 98, 0, 0, 0, 0, 0, 7, 20, 125
+"/home/base/code/container-joint-migration/Migration/volume_test.go", "Go", 0, 23, 0, 0, 0, 0, 0, 3, 9, 35
+"/home/base/code/container-joint-migration/README.md", "Markdown", 0, 0, 1, 0, 0, 0, 0, 0, 0, 1
+"/home/base/code/container-joint-migration/cmd/cli/main.go", "Go", 0, 28, 0, 0, 0, 0, 0, 6, 10, 44
+"/home/base/code/container-joint-migration/cmd/server/main.go", "Go", 0, 217, 0, 0, 0, 0, 0, 8, 42, 267
+"/home/base/code/container-joint-migration/cmd/server/main_test.go", "Go", 0, 17, 0, 0, 0, 0, 0, 0, 6, 23
+"/home/base/code/container-joint-migration/commands.sh", "Shell Script", 0, 0, 0, 7, 0, 0, 0, 1, 0, 8
+"/home/base/code/container-joint-migration/docker_reset.sh", "Shell Script", 0, 0, 0, 10, 0, 0, 0, 4, 5, 19
+"/home/base/code/container-joint-migration/gitpush.sh", "Shell Script", 0, 0, 0, 8, 0, 0, 0, 6, 6, 20
+"/home/base/code/container-joint-migration/go.mod", "Go Module File", 0, 0, 0, 0, 42, 0, 0, 0, 5, 47
+"/home/base/code/container-joint-migration/go.sum", "Go Checksum File", 0, 0, 0, 0, 0, 0, 118, 0, 1, 119
+"/home/base/code/container-joint-migration/pkg/migration/container.pb.go", "Go", 0, 586, 0, 0, 0, 0, 0, 15, 80, 681
+"/home/base/code/container-joint-migration/pkg/migration/container_grpc.pb.go", "Go", 0, 200, 0, 0, 0, 0, 0, 34, 30, 264
+"/home/base/code/container-joint-migration/proto/container.proto", "Protocol Buffers", 42, 0, 0, 0, 0, 0, 0, 0, 13, 55
+"/home/base/code/container-joint-migration/utils/getResource.go", "Go", 0, 22, 0, 0, 0, 0, 0, 6, 8, 36
+"Total", "-", 42, 1453, 1, 25, 42, 13, 118, 102, 294, 2090

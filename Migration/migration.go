@@ -114,7 +114,7 @@ func restoreContainer(checkpointData []byte, image string, name string, binds st
 }
 
 // currently PullContainerToLocalhost is more like to fetch a container from given address to local host
-func PullContainerToLocalhost(addr string, containerID string) (string, error) {
+func PullContainerToLocalhost(addr string, containerID string, recordfilename string) (string, error) {
 
 	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
 		grpc.MaxCallRecvMsgSize(200*1024*1024),
@@ -168,7 +168,7 @@ func PullContainerToLocalhost(addr string, containerID string) (string, error) {
 		return "", fmt.Errorf("could not create volume: %v", volCreateErr)
 	}
 
-	req := &pb.CheckpointRequest{ContainerId: containerID}
+	req := &pb.CheckpointRequest{ContainerId: containerID, RecordFileName: recordfilename}
 	res, err := grpcClient.CheckpointContainer(context.Background(), req)
 	if err != nil {
 		return "", fmt.Errorf("could not checkpoint container: %v", err)
@@ -183,6 +183,5 @@ func PullContainerToLocalhost(addr string, containerID string) (string, error) {
 	endTime := time.Now()
 	elapsedTime := endTime.Sub(startTime)
 	fmt.Printf("Time taken from checkpointing container to finishing restore: %s\n", elapsedTime)
-
 	return newContainerID, nil
 }

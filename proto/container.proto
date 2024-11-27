@@ -2,7 +2,8 @@ syntax = "proto3";
 
 package migration;
 
-option go_package = "pkg/migration;migration";
+option go_package = "pkg/migration";
+
 
 service ContainerMigration {
     rpc CheckpointContainer (CheckpointRequest) returns (CheckpointResponse);
@@ -15,9 +16,23 @@ service PullContainer {
     rpc PullContainer (PullRequest) returns (PullResponse);
 }
 
+service RecordF{
+    rpc RecordFReset (RecordRequest) returns (RecordResponse);
+}
+
+message RecordRequest {
+    string record_file_name = 1;
+    string container_name = 2;
+}
+
+message RecordResponse {
+    bool success = 1;
+}
+
 message PullRequest {
     string container_name = 1;
     string destination_addr = 2;
+    string record_file_name = 3;
 
 }
 
@@ -28,6 +43,7 @@ message PullResponse {
 
 message CheckpointRequest {
     string container_id = 1;
+    string record_file_name = 2;
 }
 
 message CheckpointResponse {

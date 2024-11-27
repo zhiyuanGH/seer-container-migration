@@ -261,3 +261,89 @@ var PullContainer_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "proto/container.proto",
 }
+
+// RecordFClient is the client API for RecordF service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type RecordFClient interface {
+	RecordFReset(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error)
+}
+
+type recordFClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewRecordFClient(cc grpc.ClientConnInterface) RecordFClient {
+	return &recordFClient{cc}
+}
+
+func (c *recordFClient) RecordFReset(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error) {
+	out := new(RecordResponse)
+	err := c.cc.Invoke(ctx, "/migration.RecordF/RecordFReset", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RecordFServer is the server API for RecordF service.
+// All implementations must embed UnimplementedRecordFServer
+// for forward compatibility
+type RecordFServer interface {
+	RecordFReset(context.Context, *RecordRequest) (*RecordResponse, error)
+	mustEmbedUnimplementedRecordFServer()
+}
+
+// UnimplementedRecordFServer must be embedded to have forward compatible implementations.
+type UnimplementedRecordFServer struct {
+}
+
+func (UnimplementedRecordFServer) RecordFReset(context.Context, *RecordRequest) (*RecordResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RecordFReset not implemented")
+}
+func (UnimplementedRecordFServer) mustEmbedUnimplementedRecordFServer() {}
+
+// UnsafeRecordFServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to RecordFServer will
+// result in compilation errors.
+type UnsafeRecordFServer interface {
+	mustEmbedUnimplementedRecordFServer()
+}
+
+func RegisterRecordFServer(s grpc.ServiceRegistrar, srv RecordFServer) {
+	s.RegisterService(&RecordF_ServiceDesc, srv)
+}
+
+func _RecordF_RecordFReset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RecordFServer).RecordFReset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/migration.RecordF/RecordFReset",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RecordFServer).RecordFReset(ctx, req.(*RecordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// RecordF_ServiceDesc is the grpc.ServiceDesc for RecordF service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var RecordF_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "migration.RecordF",
+	HandlerType: (*RecordFServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "RecordFReset",
+			Handler:    _RecordF_RecordFReset_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "proto/container.proto",
+}

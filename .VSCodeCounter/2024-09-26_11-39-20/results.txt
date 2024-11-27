@@ -1,0 +1,58 @@
+Date : 2024-09-26 11:39:20
+Directory : /home/base/code/container-joint-migration
+Total : 19 files,  1694 codes, 102 comments, 294 blanks, all 2090 lines
+
+Languages
++------------------+------------+------------+------------+------------+------------+
+| language         | files      | code       | comment    | blank      | total      |
++------------------+------------+------------+------------+------------+------------+
+| Go               |         11 |      1,453 |         84 |        256 |      1,793 |
+| Go Checksum File |          1 |        118 |          0 |          1 |        119 |
+| Protocol Buffers |          1 |         42 |          0 |         13 |         55 |
+| Go Module File   |          1 |         42 |          0 |          5 |         47 |
+| Shell Script     |          3 |         25 |         11 |         11 |         47 |
+| Makefile         |          1 |         13 |          7 |          8 |         28 |
+| Markdown         |          1 |          1 |          0 |          0 |          1 |
++------------------+------------+------------+------------+------------+------------+
+
+Directories
++------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                         | files      | code       | comment    | blank      | total      |
++------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                            |         19 |      1,694 |        102 |        294 |      2,090 |
+| . (Files)                                                                    |          7 |        199 |         18 |         25 |        242 |
+| Migration                                                                    |          5 |        383 |         15 |         80 |        478 |
+| cmd                                                                          |          3 |        262 |         14 |         58 |        334 |
+| cmd/cli                                                                      |          1 |         28 |          6 |         10 |         44 |
+| cmd/server                                                                   |          2 |        234 |          8 |         48 |        290 |
+| pkg                                                                          |          2 |        786 |         49 |        110 |        945 |
+| pkg/migration                                                                |          2 |        786 |         49 |        110 |        945 |
+| proto                                                                        |          1 |         42 |          0 |         13 |         55 |
+| utils                                                                        |          1 |         22 |          6 |          8 |         36 |
++------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++------------------------------------------------------------------------------+------------------+------------+------------+------------+------------+
+| filename                                                                     | language         | code       | comment    | blank      | total      |
++------------------------------------------------------------------------------+------------------+------------+------------+------------+------------+
+| /home/base/code/container-joint-migration/Makefile                           | Makefile         |         13 |          7 |          8 |         28 |
+| /home/base/code/container-joint-migration/Migration/migration.go             | Go               |        157 |          2 |         30 |        189 |
+| /home/base/code/container-joint-migration/Migration/reset.go                 | Go               |        102 |          3 |         18 |        123 |
+| /home/base/code/container-joint-migration/Migration/utils.go                 | Go               |          3 |          0 |          3 |          6 |
+| /home/base/code/container-joint-migration/Migration/volume.go                | Go               |         98 |          7 |         20 |        125 |
+| /home/base/code/container-joint-migration/Migration/volume_test.go           | Go               |         23 |          3 |          9 |         35 |
+| /home/base/code/container-joint-migration/README.md                          | Markdown         |          1 |          0 |          0 |          1 |
+| /home/base/code/container-joint-migration/cmd/cli/main.go                    | Go               |         28 |          6 |         10 |         44 |
+| /home/base/code/container-joint-migration/cmd/server/main.go                 | Go               |        217 |          8 |         42 |        267 |
+| /home/base/code/container-joint-migration/cmd/server/main_test.go            | Go               |         17 |          0 |          6 |         23 |
+| /home/base/code/container-joint-migration/commands.sh                        | Shell Script     |          7 |          1 |          0 |          8 |
+| /home/base/code/container-joint-migration/docker_reset.sh                    | Shell Script     |         10 |          4 |          5 |         19 |
+| /home/base/code/container-joint-migration/gitpush.sh                         | Shell Script     |          8 |          6 |          6 |         20 |
+| /home/base/code/container-joint-migration/go.mod                             | Go Module File   |         42 |          0 |          5 |         47 |
+| /home/base/code/container-joint-migration/go.sum                             | Go Checksum File |        118 |          0 |          1 |        119 |
+| /home/base/code/container-joint-migration/pkg/migration/container.pb.go      | Go               |        586 |         15 |         80 |        681 |
+| /home/base/code/container-joint-migration/pkg/migration/container_grpc.pb.go | Go               |        200 |         34 |         30 |        264 |
+| /home/base/code/container-joint-migration/proto/container.proto              | Protocol Buffers |         42 |          0 |         13 |         55 |
+| /home/base/code/container-joint-migration/utils/getResource.go               | Go               |         22 |          6 |          8 |         36 |
+| Total                                                                        |                  |      1,694 |        102 |        294 |      2,090 |
++------------------------------------------------------------------------------+------------------+------------+------------+------------+------------+
