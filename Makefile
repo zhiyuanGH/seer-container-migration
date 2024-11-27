@@ -6,7 +6,7 @@ EXP_COLLECT_PF_BINARY=ectrpf
 # Define the source directories
 SERVER_SRC=./cmd/ectrserver/main.go
 CLIENT_SRC=./cmd/ectr/main.go
-EXP_COLLECT_PF_SRC =./cmd/exp_collect_pf/main.go
+EXP_COLLECT_PF_SRC =./cmd/expCollectPF/main.go
 
 # Define the installation directory
 INSTALL_DIR=/usr/local/bin
