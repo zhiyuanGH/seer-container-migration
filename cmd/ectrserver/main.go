@@ -119,7 +119,9 @@ func (s *server) CheckpointContainer(ctx context.Context, req *pb.CheckpointRequ
 
 	if req.RecordFileName == "" {
 		// Rename the record file
-		exp.RenameRecordFile(req.RecordFileName)
+		if err:=exp.RenameRecordFile(req.RecordFileName); err != nil {
+			return nil, err
+		}
 	}
 
 	return &pb.CheckpointResponse{CheckpointId: checkpointID, CheckpointData: buf.Bytes()}, nil
