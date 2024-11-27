@@ -51,6 +51,7 @@ func (s *server) RecordFReset(ctx context.Context, req *pb.RecordRequest) (*pb.R
 		return &pb.RecordResponse{Success: false}, err
 	}
 	if err := exp.RenameRecordFile(req.ContainerName); err != nil {
+		log.Printf("Error renaming record file F on dst: %v", err)
 		return &pb.RecordResponse{Success: false}, err
 	}
 	exp.Reset()
@@ -120,6 +121,7 @@ func (s *server) CheckpointContainer(ctx context.Context, req *pb.CheckpointRequ
 	if req.RecordFileName == "" {
 		// Rename the record file
 		if err:=exp.RenameRecordFile(req.RecordFileName); err != nil {
+			log.Printf("Error renaming record file P on src: %v", err)
 			return nil, err
 		}
 	}
