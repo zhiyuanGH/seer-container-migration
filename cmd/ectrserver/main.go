@@ -118,7 +118,7 @@ func (s *server) CheckpointContainer(ctx context.Context, req *pb.CheckpointRequ
 		return nil, err
 	}
 
-	if req.RecordFileName == "" {
+	if req.RecordFileName != "" {
 		// Rename the record file
 		if err:=exp.RenameRecordFile(req.RecordFileName); err != nil {
 			fmt.Printf("Error renaming record file P on src: %v", err)
