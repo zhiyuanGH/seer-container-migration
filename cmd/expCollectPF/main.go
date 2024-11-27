@@ -4,10 +4,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
+	"time"
+
 	exp "github.com/zhiyuanGH/container-joint-migration/exputils"
 	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
 	"google.golang.org/grpc"
-	"log"
 )
 
 // run on src side, it will run the container, migrate it at random time, and record the p on src, and f on dst
@@ -39,13 +41,19 @@ func main() {
 			recordFFileName := fmt.Sprintf("/home/base/code/box/data_f/%s_%d.csv", alias, i+1)
 
 			//Run the container on src
-			args := append([]string{"docker", "run", "--name", alias, "-v", "/mnt/nfs_share:/data", imageName}, commandArgs...)
+			args := append([]string{"docker", "run", "-d", "--name", alias, "-v", "/mnt/nfs_share:/data", imageName}, commandArgs...)
 			log.Printf("Executing: sudo %v\n", args)
 			_, _, err := executor.Execute(args)
 			if err != nil {
 				log.Printf("Error during 'docker run': %v", err)
 				continue
 			}
+
+			//Wait for random time
+			log.Printf("Waiting for random time")
+			time.Sleep(15 * time.Second)
+			log.Printf("Finish Waiting for random time")
+
 
 			//migrate the container
 			req := &pb.PullRequest{DestinationAddr: *src, ContainerName: *containerName, RecordFileName: recordPFileName}
