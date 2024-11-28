@@ -283,6 +283,7 @@ func main() {
 	pb.RegisterPullContainerServer(grpcServer, &server{}) // Register PullContainer service
 
 	log.Printf("Server listening at %v", lis.Addr())
+	fmt.Println("Testing")
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

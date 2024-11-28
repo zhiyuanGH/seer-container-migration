@@ -19,6 +19,7 @@ func main() {
 	dst := flag.String("dst", "192.168.116.149:50051", "Server address for destination host")
 	containerName := flag.String("container", "cnn", "ID of the container to migrate")
 	executor := &exp.RealCommandExecutor{}
+	fmt.Println("Testing")
 
 	// Parse the flags
 	flag.Parse()
