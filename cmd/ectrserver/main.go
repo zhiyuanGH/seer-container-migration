@@ -287,6 +287,7 @@ func main() {
 	// Register both services
 	pb.RegisterContainerMigrationServer(grpcServer, &server{})
 	pb.RegisterPullContainerServer(grpcServer, &server{}) // Register PullContainer service
+	pb.RegisterRecordFServer(grpcServer, &server{})       // Register RecordF service
 
 	log.Printf("Server listening at %v", lis.Addr())
 	fmt.Println("Testing")
