@@ -43,24 +43,33 @@ func restoreContainer(checkpointData []byte, image string, name string, binds st
 		return "", fmt.Errorf("error creating Docker client: %v", err)
 	}
 
+	// Pull the image if it doesn't exist
 	err = PullImageIfNotExists(cli, image)
 	if err != nil {
 		return "", fmt.Errorf("error pulling image: %v", err)
 	}
 	fmt.Printf("Pulled image %s successfully \n", image)
 
+	// Handle binds: If binds is empty, pass nil to HostConfig.Binds
+	var bindList []string
+	if binds != "" {
+		bindList = append(bindList, binds)
+	}
+
+	// Create the container
 	newResp, err := cli.ContainerCreate(context.Background(), &container.Config{
 		Image: image,
 		Cmd:   []string{"sh", "-c", "i=0; while true; do echo $i; i=$((i+1)); sleep 1; done"},
 		Tty:   false,
 	}, &container.HostConfig{
-		Binds: []string{binds},
-	}, nil, nil, name) // Pass the name parameter here
+		Binds: bindList, // Use bindList which is nil if binds was empty
+	}, nil, nil, name)
 	if err != nil {
 		return "", fmt.Errorf("error creating container: %v", err)
 	}
 	fmt.Printf("Created container with ID: %s and Name: %s\n", newResp.ID, name)
 
+	// Create checkpoint directory
 	checkpointDir := fmt.Sprintf("/var/lib/docker/containers/%s/checkpoints/checkpoint1", newResp.ID)
 	err = os.MkdirAll(checkpointDir, os.ModePerm)
 	if err != nil {
@@ -68,6 +77,7 @@ func restoreContainer(checkpointData []byte, image string, name string, binds st
 	}
 	fmt.Print("Created checkpoint directory successfully\n")
 
+	// Unzip the checkpoint data
 	buf := bytes.NewBuffer(checkpointData)
 	gz, err := gzip.NewReader(buf)
 	if err != nil {
@@ -75,6 +85,7 @@ func restoreContainer(checkpointData []byte, image string, name string, binds st
 	}
 	tarReader := tar.NewReader(gz)
 
+	// Extract the checkpoint data
 	for {
 		hdr, err := tarReader.Next()
 		if err == io.EOF {
@@ -104,6 +115,7 @@ func restoreContainer(checkpointData []byte, image string, name string, binds st
 	}
 	fmt.Println("Extracted checkpoint data successfully")
 
+	// Start the container with the checkpoint
 	err = cli.ContainerStart(context.Background(), newResp.ID, container.StartOptions{CheckpointID: "checkpoint1"})
 	if err != nil {
 		return "", fmt.Errorf("error starting container: %v", err)
@@ -112,6 +124,7 @@ func restoreContainer(checkpointData []byte, image string, name string, binds st
 
 	return newResp.ID, nil
 }
+
 
 // currently PullContainerToLocalhost is more like to fetch a container from given address to local host
 func PullContainerToLocalhost(addr string, containerID string, recordfilename string) (string, error) {
