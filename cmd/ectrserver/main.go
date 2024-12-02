@@ -173,7 +173,7 @@ func (s *server) TransferVolume(ctx context.Context, req *pb.VolumeRequest) (*pb
 	var nfsSource string  //nfsSource is only assigned if the container has a nfs bind mount
 
 	if len(containerInfo.Mounts) == 0 {
-		return nil, nil
+		return &pb.VolumeResponse{}, nil
 	}
 	var destination string
 
