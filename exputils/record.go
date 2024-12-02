@@ -12,6 +12,7 @@ func RenameRecordFile(filename string) error {
 	fmt.Println("Renaming the filename of the record file: ", filename)
 	// Extract the directory path from the filename
 	dir := strings.TrimSuffix(filename, "/" + strings.Split(filename, "/")[len(filename)-1])
+	fmt.Println("Directory path: ", dir)
 
 	// Check if the directory exists, and create it if it doesn't
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
