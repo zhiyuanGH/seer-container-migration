@@ -18,7 +18,7 @@ import (
 )
 
 func Createvolume(volres *pb.VolumeResponse) (binds string, err error) {
-	if volres == nil {
+	if volres.VolumeName == "" {
 		return "", nil
 	}
 	if volres.NfsSource != "" {
