@@ -132,7 +132,7 @@ func PullContainerToLocalhost(addr string, containerID string, recordfilename st
 	infoReq := &pb.ContainerInfoRequest{ContainerId: containerID}
 	infoRes, err := grpcClient.TransferContainerInfo(context.Background(), infoReq)
 	if err != nil {
-		return "", fmt.Errorf("could not checkpoint container: %v", err)
+		return "", fmt.Errorf("could not get container info: %v", err)
 	}
 	var containerInfo types.ContainerJSON
 	err = json.Unmarshal(infoRes.ContainerInfo, &containerInfo)

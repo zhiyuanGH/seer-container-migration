@@ -9,6 +9,7 @@ import (
 
 // RenameRecordFile renames the file and creates the target directory if it does not exist
 func RenameRecordFile(filename string) error {
+	fmt.Println("Renaming the filename of the record file: ", filename)
 	// Extract the directory path from the filename
 	dir := strings.TrimSuffix(filename, "/" + strings.Split(filename, "/")[len(filename)-1])
 
