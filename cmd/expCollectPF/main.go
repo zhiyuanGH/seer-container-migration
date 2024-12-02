@@ -16,7 +16,6 @@ func main() {
 	// Define flags for server address and container ID with default values
 	src := flag.String("src", "192.168.116.148:50051", "Server address for source host ")
 	dst := flag.String("dst", "192.168.116.149:50051", "Server address for destination host")
-	containerName := flag.String("container", "cnn", "ID of the container to migrate")
 	executor := &exp.RealCommandExecutor{}
 	fmt.Println("Testing")
 
@@ -69,7 +68,7 @@ func main() {
 			log.Printf("Finish Waiting for random time")
 
 			// Migrate the container
-			req := &pb.PullRequest{DestinationAddr: *src, ContainerName: *containerName, RecordFileName: recordPFileName}
+			req := &pb.PullRequest{DestinationAddr: *src, ContainerName: alias, RecordFileName: recordPFileName}
 			conn, err := grpc.Dial(*dst, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
 				grpc.MaxCallRecvMsgSize(200*1024*1024),
 			))
@@ -88,7 +87,7 @@ func main() {
 			if res.Success {
 				fmt.Printf("New container restored on %s with ID: %s\n", *dst, res.ContainerId)
 				// Record the F on dst
-				recordReq := &pb.RecordRequest{ContainerName: *containerName, RecordFileName: recordFFileName}
+				recordReq := &pb.RecordRequest{ContainerName: alias, RecordFileName: recordFFileName}
 				recordClient := pb.NewRecordFClient(conn)
 				recordRes, err := recordClient.RecordFReset(context.Background(), recordReq)
 				if err != nil {
