@@ -24,13 +24,14 @@ func main() {
 
 	// Define flags for each image (can add more flags as needed)
 	imageFlags := map[string][]string{
-		"192.168.116.150:5000/cnn:esgz":  {"-v", "/mnt/nfs_share:/data"},                // Example of port flag for cnn image
-		"192.168.116.150:5000/node:esgz": {"-p", "8080:80"}, // Example of port flag for node image
+		"192.168.116.150:5000/cnn:esgz":      {"-v", "/mnt/nfs_share:/data"}, // Example of port flag for cnn image
+		"192.168.116.150:5000/node:esgz":     {"-p", "8080:80"},              // Example of port flag for node image
+		"192.168.116.150:5000/postgres:esgz": {"-e", "POSTGRES_PASSWORD=mysecretpassword", "-e", "POSTGRES_DB=mydatabase"},
 	}
 
 	// Migrate the container using the provided or default server address and container ID
 	for _, imageName := range containerList {
-		for i := 0; i < 20; i++ {
+		for i := 3; i < 20; i++ {
 			// Reset the src
 			exp.Reset()
 
@@ -52,7 +53,7 @@ func main() {
 			}
 
 			// Run the container on src
-			args := append([]string{"docker", "run", "-d", "--name", alias,}, imageSpecificFlags...)
+			args := append([]string{"docker", "run", "-d", "--name", alias}, imageSpecificFlags...)
 			args = append(args, imageName)
 			args = append(args, commandArgs...)
 			log.Printf("Executing: sudo %v\n", args)
@@ -102,16 +103,19 @@ func main() {
 }
 
 var containeralias = map[string]string{
-	"192.168.116.150:5000/cnn:esgz":  "cnn",
-	"192.168.116.150:5000/node:esgz": "node",
+	"192.168.116.150:5000/cnn:esgz":      "cnn",
+	"192.168.116.150:5000/node:esgz":     "node",
+	"192.168.116.150:5000/postgres:esgz": "postgres",
 }
 
 var containerCommands = map[string][]string{
-	"192.168.116.150:5000/node:esgz": {},
-	"192.168.116.150:5000/cnn:esgz":  {"python3", "-u", "main.py", "--batch-size", "64", "--test-batch-size", "1000", "--epochs", "1", "--lr", "0.1", "--gamma", "0.7", "--log-interval", "1", "--save-model"},
+	"192.168.116.150:5000/node:esgz":     {},
+	"192.168.116.150:5000/cnn:esgz":      {"python3", "-u", "main.py", "--batch-size", "64", "--test-batch-size", "1000", "--epochs", "1", "--lr", "0.1", "--gamma", "0.7", "--log-interval", "1", "--save-model"},
+	"192.168.116.150:5000/postgres:esgz": {},
 }
 
 var containerList = []string{
 	// "192.168.116.150:5000/cnn:esgz",
-	"192.168.116.150:5000/node:esgz",
+	// "192.168.116.150:5000/node:esgz",
+	"192.168.116.150:5000/postgres:esgz",
 }
