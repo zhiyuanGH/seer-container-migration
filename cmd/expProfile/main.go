@@ -115,7 +115,7 @@ var containerCommands = map[string][]string{
 }
 
 var containerList = []string{
-	// "192.168.116.150:5000/cnn:esgz",
-	// "192.168.116.150:5000/node:esgz",
+	"192.168.116.150:5000/cnn:esgz",
+	"192.168.116.150:5000/node:esgz",
 	"192.168.116.150:5000/postgres:esgz",
 }

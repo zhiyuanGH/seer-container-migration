@@ -293,6 +293,7 @@ func main() {
 
 	grpcServer := grpc.NewServer(
 		grpc.MaxRecvMsgSize(200 * 1024 * 1024),
+		grpc.UnaryInterceptor(UnaryTrafficInterceptor),
 	)
 
 	// Register both services
@@ -305,4 +306,36 @@ func main() {
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+}
+
+func UnaryTrafficInterceptor(
+	ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (interface{}, error) {
+	// Log incoming request size
+	reqSize := getSize(req)
+	log.Printf("Incoming Request - Method:%s Size:%d bytes", info.FullMethod, reqSize)
+
+	// Handle the request
+	resp, err := handler(ctx, req)
+
+	// Log outgoing response size
+	respSize := getSize(resp)
+	log.Printf("Outgoing Response - Method:%s Size:%d bytes", info.FullMethod, respSize)
+
+	return resp, err
+}
+
+// getSize calculates the approximate size of the message in bytes.
+func getSize(msg interface{}) int {
+	if msg == nil {
+		return 0
+	}
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return 0
+	}
+	return len(data)
 }
