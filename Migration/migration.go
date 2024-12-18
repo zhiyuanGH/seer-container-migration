@@ -15,26 +15,14 @@ import (
 	"github.com/docker/docker/api/types"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
+
 	"github.com/docker/docker/client"
 	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
 	"google.golang.org/grpc"
 )
 
 // PullImageIfNotExists pulls the specified image if it does not exist locally
-func PullImageIfNotExists(cli *client.Client, imageName string) error {
-	_, _, err := cli.ImageInspectWithRaw(context.Background(), imageName)
-	if err != nil {
-		fmt.Printf("Image %s not found locally. Pulling...\n", imageName)
-		reader, err := cli.ImagePull(context.Background(), imageName, image.PullOptions{})
-		if err != nil {
-			return fmt.Errorf("could not pull image: %v", err)
-		}
-		defer reader.Close()
-		io.Copy(os.Stdout, reader)
-	}
-	return nil
-}
+
 
 func restoreContainer(checkpointData []byte, image string, name string, binds string) (string, error) {
 	fmt.Printf("Starting restore container %s with image %s\n", name, image)
@@ -44,7 +32,7 @@ func restoreContainer(checkpointData []byte, image string, name string, binds st
 	}
 
 	// Pull the image if it doesn't exist
-	err = PullImageIfNotExists(cli, image)
+	_, err = PullImageIfNotExists(cli, image)
 	if err != nil {
 		return "", fmt.Errorf("error pulling image: %v", err)
 	}
@@ -127,14 +115,14 @@ func restoreContainer(checkpointData []byte, image string, name string, binds st
 
 
 // currently PullContainerToLocalhost is more like to fetch a container from given address to local host
-func PullContainerToLocalhost(addr string, containerID string, recordfilename string) (string, error) {
+func PullContainerToLocalhost(addr string, containerID string, recordfilename string) (string, int64, error) {
 
 	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
 		grpc.MaxCallRecvMsgSize(200*1024*1024),
 	))
 
 	if err != nil {
-		return "", fmt.Errorf("did not connect: %v", err)
+		return "", 0, fmt.Errorf("did not connect: %v", err)
 	}
 	defer conn.Close()
 
@@ -145,12 +133,12 @@ func PullContainerToLocalhost(addr string, containerID string, recordfilename st
 	infoReq := &pb.ContainerInfoRequest{ContainerId: containerID}
 	infoRes, err := grpcClient.TransferContainerInfo(context.Background(), infoReq)
 	if err != nil {
-		return "", fmt.Errorf("could not get container info: %v", err)
+		return "", 0, fmt.Errorf("could not get container info: %v", err)
 	}
 	var containerInfo types.ContainerJSON
 	err = json.Unmarshal(infoRes.ContainerInfo, &containerInfo)
 	if err != nil {
-		return "", fmt.Errorf("could not unmarshal container info: %v", err)
+		return "", 0, fmt.Errorf("could not unmarshal container info: %v", err)
 	}
 	fmt.Printf("Container Name: %s\n", containerInfo.Name)
 	fmt.Printf("Container Image: %s\n", containerInfo.Config.Image)
@@ -158,13 +146,14 @@ func PullContainerToLocalhost(addr string, containerID string, recordfilename st
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		return "", fmt.Errorf("error creating Docker client: %v", err)
+		return "", 0, fmt.Errorf("error creating Docker client: %v", err)
 	}
 
-	err = PullImageIfNotExists(cli, containerInfo.Config.Image)
+	trafficMigrateImage, err := PullImageIfNotExists(cli, containerInfo.Config.Image)
 	if err != nil {
-		return "", fmt.Errorf("error pulling image: %v", err)
+		return "", 0, fmt.Errorf("error pulling image: %v", err)
 	}
+
 	fmt.Printf("Pulled image %s successfully \n", containerInfo.Config.Image)
 
 	
@@ -172,29 +161,29 @@ func PullContainerToLocalhost(addr string, containerID string, recordfilename st
 	volReq := &pb.VolumeRequest{ContainerId: containerID}
 	volRes, err := grpcClient.TransferVolume(context.Background(), volReq)
 	if err != nil {
-		return "", fmt.Errorf("could not transfer volume: %v", err)
+		return "", 0, fmt.Errorf("could not transfer volume: %v", err)
 	}
 	fmt.Printf("got volume res \n")
 
 	binds, volCreateErr := Createvolume(volRes)
 	if volCreateErr != nil {
-		return "", fmt.Errorf("could not create volume: %v", volCreateErr)
+		return "", 0, fmt.Errorf("could not create volume: %v", volCreateErr)
 	}
 
 	req := &pb.CheckpointRequest{ContainerId: containerID, RecordFileName: recordfilename}
 	res, err := grpcClient.CheckpointContainer(context.Background(), req)
 	if err != nil {
-		return "", fmt.Errorf("could not checkpoint container: %v", err)
+		return "", 0, fmt.Errorf("could not checkpoint container: %v", err)
 	}
 	fmt.Print("got checkpoint res \n")
 
 	newContainerID, err := restoreContainer(res.CheckpointData, containerInfo.Config.Image, containerInfo.Name, binds)
 	if err != nil {
-		return "", fmt.Errorf("could not restore container: %v", err)
+		return "", 0, fmt.Errorf("could not restore container: %v", err)
 	}
 
 	endTime := time.Now()
 	elapsedTime := endTime.Sub(startTime)
 	fmt.Printf("Time taken from checkpointing container to finishing restore: %s\n", elapsedTime)
-	return newContainerID, nil
+	return newContainerID, trafficMigrateImage, nil
 }

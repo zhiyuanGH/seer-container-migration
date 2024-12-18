@@ -2,120 +2,99 @@ package main
 
 import (
 	"context"
-	"flag"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
-	"time"
 
-	exp "github.com/zhiyuanGH/container-joint-migration/exputils"
-	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
-	"google.golang.org/grpc"
+
+	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/client"
 )
 
-func main() {
-	// Define flags for server address and container ID with default values
-	src := flag.String("src", "192.168.116.148:50051", "Server address for source host ")
-	dst := flag.String("dst", "192.168.116.149:50051", "Server address for destination host")
-	executor := &exp.RealCommandExecutor{}
-	fmt.Println("Testing")
+// ImagePullProgress represents the structure of progress messages from Docker ImagePull.
+type ImagePullProgress struct {
+	Status         string `json:"status"`
+	ID             string `json:"id,omitempty"`
+	Progress       string `json:"progress,omitempty"`
+	ProgressDetail struct {
+		Current int64 `json:"current"`
+		Total   int64 `json:"total"`
+	} `json:"progressDetail,omitempty"`
+	Digest string `json:"digest,omitempty"`
+	Error  string `json:"error,omitempty"`
+}
 
-	// Parse the flags
-	flag.Parse()
+// PullImageIfNotExists checks if a Docker image exists locally.
+// If not, it pulls the image and returns the total bytes pulled.
+func PullImageIfNotExists(cli *client.Client, imageName string) (string, error) {
+	ctx := context.Background()
 
-	// Define flags for each image (can add more flags as needed)
-	imageFlags := map[string][]string{
-		"192.168.116.150:5000/cnn:esgz":      {"-v", "/mnt/nfs_share:/data"}, // Example of port flag for cnn image
-		"192.168.116.150:5000/node:esgz":     {"-p", "8080:80"},              // Example of port flag for node image
-		"192.168.116.150:5000/postgres:esgz": {},
+	// Inspect the image to check if it exists locally
+	_, _, err := cli.ImageInspectWithRaw(ctx, imageName)
+	if err == nil {
+		// Image exists locally
+		return "Image already exists locally. No network traffic generated.", nil
 	}
 
-	// Migrate the container using the provided or default server address and container ID
-	for _, imageName := range containerList {
-		for i := 0; i < 3; i++ {
-			// Reset the src
-			exp.Reset()
+	// Image not found locally; proceed to pull
+	fmt.Printf("Image %s not found locally. Pulling...\n", imageName)
 
-			// Extract the container alias and write the record file name
-			commandArgs, ok := containerCommands[imageName]
-			alias, okAlias := containeralias[imageName]
-			if !ok || !okAlias {
-				log.Printf("No command found for image: %s", imageName)
-				continue
-			}
-			recordPFileName := fmt.Sprintf("/home/base/code/box/data_p/%s/%s_%d.csv", alias, alias, i+1)
-			recordFFileName := fmt.Sprintf("/home/base/code/box/data_f/%s/%s_%d.csv", alias, alias, i+1)
+	// Pull the image
+	reader, err := cli.ImagePull(ctx, imageName, image.PullOptions{})
+	if err != nil {
+		return "", fmt.Errorf("could not pull image: %v", err)
+	}
+	defer reader.Close()
 
-			// Get the specific flags for the current image
-			imageSpecificFlags, ok := imageFlags[imageName]
-			if !ok {
-				log.Printf("No specific flags found for image: %s", imageName)
-				continue
-			}
+	// Initialize total bytes pulled
+	var totalBytes int64 = 0
 
-			// Run the container on src
-			args := append([]string{"docker", "run", "-d", "--name", alias}, imageSpecificFlags...)
-			args = append(args, imageName)
-			args = append(args, commandArgs...)
-			log.Printf("Executing: sudo %v\n", args)
-			_, _, err := executor.Execute(args)
-			if err != nil {
-				log.Printf("Error during 'docker run': %v", err)
-				continue
-			}
+	// Create a JSON decoder
+	decoder := json.NewDecoder(reader)
 
-			// Wait for random time
-			log.Printf("Waiting for random time")
-			time.Sleep(15 * time.Second)
-			log.Printf("Finish Waiting for random time")
-
-			// Migrate the container
-			req := &pb.PullRequest{DestinationAddr: *src, ContainerName: alias, RecordFileName: recordPFileName}
-			conn, err := grpc.Dial(*dst, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
-				grpc.MaxCallRecvMsgSize(200*1024*1024),
-			))
-			if err != nil {
-				fmt.Printf("did not connect: %v\n", err)
-			}
-			defer conn.Close()
-
-			client := pb.NewPullContainerClient(conn)
-
-			// The PullContainer will trigger the recordP on src
-			res, err := client.PullContainer(context.Background(), req)
-			if err != nil {
-				fmt.Printf("Container migration failed: %v\n", err)
-			}
-			if res.Success {
-				fmt.Printf("New container restored on %s with ID: %s\n", *dst, res.ContainerId)
-				// Record the F on dst
-				recordReq := &pb.RecordRequest{ContainerName: alias, RecordFileName: recordFFileName}
-				recordClient := pb.NewRecordFClient(conn)
-				recordRes, err := recordClient.RecordFReset(context.Background(), recordReq)
-				if err != nil {
-					fmt.Printf("Record F failed: %v\n", err)
-				}
-				if recordRes.Success {
-					fmt.Printf("Record F success\n")
-				}
-			}
+	// Read the response line by line
+	for {
+		var progress ImagePullProgress
+		if err := decoder.Decode(&progress); err == io.EOF {
+			break
+		} else if err != nil {
+			return "", fmt.Errorf("error decoding image pull progress: %v", err)
 		}
+
+		// Accumulate bytes from progressDetail.current
+		totalBytes += progress.ProgressDetail.Current
+
+		// Optionally, print the progress
+		fmt.Printf("%v\n", progress)
 	}
+
+	// Create a summary of the network traffic
+	networkTraffic := fmt.Sprintf(
+		"Total bytes pulled: %d bytes",
+		totalBytes,
+	)
+
+	return networkTraffic, nil
 }
 
-var containeralias = map[string]string{
-	"192.168.116.150:5000/cnn:esgz":      "cnn",
-	"192.168.116.150:5000/node:esgz":     "node",
-	"192.168.116.150:5000/postgres:esgz": "postgres",
-}
+func main() {
+	// Initialize the Docker client with environment variables and API version negotiation
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		log.Fatalf("Error initializing Docker client: %v", err)
+	}
 
-var containerCommands = map[string][]string{
-	"192.168.116.150:5000/node:esgz":     {},
-	"192.168.116.150:5000/cnn:esgz":      {"python3", "-u", "main.py", "--batch-size", "64", "--test-batch-size", "1000", "--epochs", "1", "--lr", "0.1", "--gamma", "0.7", "--log-interval", "1", "--save-model"},
-	"192.168.116.150:5000/postgres:esgz": {},
-}
+	// Specify the Docker image to pull
+	imageName := "192.168.116.150:5000/node:esgz" // Replace with your desired image
 
-var containerList = []string{
-	"192.168.116.150:5000/cnn:esgz",
-	"192.168.116.150:5000/node:esgz",
-	"192.168.116.150:5000/postgres:esgz",
+	// Call the PullImageIfNotExists function
+	traffic, err := PullImageIfNotExists(cli, imageName)
+	if err != nil {
+		log.Fatalf("Error pulling image: %v", err)
+	}
+
+	// Print the captured network traffic information
+	fmt.Println("Network Traffic During Image Pull:")
+	fmt.Println(traffic)
 }

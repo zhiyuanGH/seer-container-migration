@@ -39,16 +39,21 @@ message PullRequest {
 message PullResponse {
     bool success = 1;
     string container_id = 2;
+    int64 bytesMigrateImage = 3;
+    int64 bytesMigrateVolume = 4;
+    int64 bytesMigrateCheckpoint = 5;
 }
 
 message CheckpointRequest {
     string container_id = 1;
     string record_file_name = 2;
+
 }
 
 message CheckpointResponse {
     string checkpoint_id = 1;
     bytes checkpoint_data = 2;
+    int64 bytesMigrateCheckpoint = 3;
 }
 
 message VolumeRequest {
@@ -60,6 +65,7 @@ message VolumeResponse {
     bytes volume_data = 2;
     string nfs_source = 3;
     string destination = 4;
+    int64 bytesMigrateVolume = 5;
 }
 
 message ContainerInfoRequest {

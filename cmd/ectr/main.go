@@ -39,5 +39,6 @@ func main() {
 		fmt.Printf("Container migration failed: %v\n", err)
 	}
 	fmt.Printf("New container restored on %s with ID: %s\n", *dst, res.ContainerId)
+	fmt.Printf("The bytes transferred: %d\n", res.BytesMigrateImage)
 
 }

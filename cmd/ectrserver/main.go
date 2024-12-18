@@ -36,13 +36,13 @@ func (s *server) PullContainer(ctx context.Context, req *pb.PullRequest) (*pb.Pu
 	fmt.Printf("Received request to pull container from: %s\n", req.DestinationAddr)
 	addr := req.DestinationAddr
 	containerName := req.ContainerName
-	newContainerID, err := Migration.PullContainerToLocalhost(addr, containerName, req.RecordFileName)
+	newContainerID, trafficMigrateImage, err := Migration.PullContainerToLocalhost(addr, containerName, req.RecordFileName)
 	if err != nil {
 		log.Fatalf("Container migration failed: %v", err)
-		return &pb.PullResponse{ContainerId: containerName, Success: false}, err
+		return &pb.PullResponse{ContainerId: containerName, BytesMigrateImage: trafficMigrateImage, Success: false}, err
 	}
 	fmt.Printf("New container restored with ID: %s\n", newContainerID) // revise to log
-	return &pb.PullResponse{ContainerId: newContainerID, Success: true}, nil
+	return &pb.PullResponse{ContainerId: newContainerID, BytesMigrateImage: trafficMigrateImage, Success: true}, nil
 }
 
 // this service is running on the dst side and record the f and reset the dst
@@ -144,7 +144,6 @@ func (s *server) CheckpointContainer(ctx context.Context, req *pb.CheckpointRequ
 	// Return checkpoint response with the checkpoint data
 	return &pb.CheckpointResponse{CheckpointId: checkpointID, CheckpointData: buf.Bytes()}, nil
 }
-
 
 func (s *server) TransferContainerInfo(ctx context.Context, req *pb.ContainerInfoRequest) (*pb.ContainerInfoResponse, error) {
 
@@ -292,7 +291,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer(
-		grpc.MaxRecvMsgSize(200 * 1024 * 1024),
+		grpc.MaxRecvMsgSize(200*1024*1024),
 		grpc.UnaryInterceptor(UnaryTrafficInterceptor),
 	)
 
