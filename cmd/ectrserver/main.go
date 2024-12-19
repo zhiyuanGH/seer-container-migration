@@ -17,9 +17,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/docker/api/types"
+
 	"github.com/docker/docker/api/types/checkpoint"
 	"github.com/docker/docker/client"
-	"github.com/zhiyuanGH/container-joint-migration/Migration"
+	m "github.com/zhiyuanGH/container-joint-migration/Migration"
 	exp "github.com/zhiyuanGH/container-joint-migration/exputils"
 	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
 	"google.golang.org/grpc"
@@ -31,18 +33,93 @@ type server struct {
 	pb.UnimplementedRecordFServer
 }
 
+func pullContainer(addr string, containerID string, recordfilename string) (string, int64, int64, int64, error) {
+
+	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
+		grpc.MaxCallRecvMsgSize(200*1024*1024),
+	))
+
+	if err != nil {
+		return "", 0, 0, 0, fmt.Errorf("did not connect: %v", err)
+	}
+	defer conn.Close()
+
+	grpcClient := pb.NewContainerMigrationClient(conn)
+
+	startTime := time.Now()
+
+	infoReq := &pb.ContainerInfoRequest{ContainerId: containerID}
+	infoRes, err := grpcClient.TransferContainerInfo(context.Background(), infoReq)
+	if err != nil {
+		return "", 0, 0, 0, fmt.Errorf("could not get container info: %v", err)
+	}
+	var containerInfo types.ContainerJSON
+	err = json.Unmarshal(infoRes.ContainerInfo, &containerInfo)
+	if err != nil {
+		return "", 0, 0, 0, fmt.Errorf("could not unmarshal container info: %v", err)
+	}
+	fmt.Printf("Container Name: %s\n", containerInfo.Name)
+	fmt.Printf("Container Image: %s\n", containerInfo.Config.Image)
+	fmt.Printf("Container State: %s\n", containerInfo.State.Status)
+
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return "", 0, 0, 0, fmt.Errorf("error creating Docker client: %v", err)
+	}
+
+	trafficMigrateImage, err := m.PullImageIfNotExists(cli, containerInfo.Config.Image)
+	if err != nil {
+		return "", 0, 0, 0, fmt.Errorf("error pulling image: %v", err)
+	}
+
+	fmt.Printf("Pulled image %s successfully \n", containerInfo.Config.Image)
+
+	volReq := &pb.VolumeRequest{ContainerId: containerID}
+	volRes, err := grpcClient.TransferVolume(context.Background(), volReq)
+
+	if err != nil {
+		return "", 0, 0, 0, fmt.Errorf("could not transfer volume: %v", err)
+	}
+	fmt.Printf("got volume res \n")
+	BytesMigrateVolume := volRes.BytesMigrateVolume
+
+	binds, volCreateErr := m.Createvolume(volRes)
+	if volCreateErr != nil {
+		return "", 0, 0, 0, fmt.Errorf("could not create volume: %v", volCreateErr)
+	}
+
+	req := &pb.CheckpointRequest{ContainerId: containerID, RecordFileName: recordfilename}
+	res, err := grpcClient.CheckpointContainer(context.Background(), req)
+
+	if err != nil {
+		return "", 0, 0, 0, fmt.Errorf("could not checkpoint container: %v", err)
+	}
+	fmt.Print("got checkpoint res \n")
+	BytesMigrateCheckpoint := res.BytesMigrateCheckpoint
+
+	newContainerID, err := m.RestoreContainer(res.CheckpointData, containerInfo.Config.Image, containerInfo.Name, binds)
+	if err != nil {
+		return "", 0, 0, 0, fmt.Errorf("could not restore container: %v", err)
+	}
+
+	endTime := time.Now()
+	elapsedTime := endTime.Sub(startTime)
+	fmt.Printf("Time taken from checkpointing container to finishing restore: %s\n", elapsedTime)
+	return newContainerID, trafficMigrateImage, BytesMigrateCheckpoint, BytesMigrateVolume, nil
+}
+
 func (s *server) PullContainer(ctx context.Context, req *pb.PullRequest) (*pb.PullResponse, error) {
 
 	fmt.Printf("Received request to pull container from: %s\n", req.DestinationAddr)
 	addr := req.DestinationAddr
 	containerName := req.ContainerName
-	newContainerID, trafficMigrateImage, err := Migration.PullContainerToLocalhost(addr, containerName, req.RecordFileName)
+	newContainerID, trafficMigrateImage, BytesMigrateCheckpoint, BytesMigrateVolume, err := pullContainer(addr, containerName, req.RecordFileName)
 	if err != nil {
 		log.Fatalf("Container migration failed: %v", err)
 		return &pb.PullResponse{ContainerId: containerName, BytesMigrateImage: trafficMigrateImage, Success: false}, err
 	}
 	fmt.Printf("New container restored with ID: %s\n", newContainerID) // revise to log
-	return &pb.PullResponse{ContainerId: newContainerID, BytesMigrateImage: trafficMigrateImage, Success: true}, nil
+	return &pb.PullResponse{ContainerId: newContainerID, BytesMigrateImage: trafficMigrateImage, BytesMigrateCheckpoint: BytesMigrateCheckpoint, BytesMigrateVolume: BytesMigrateVolume, Success: true}, nil
 }
 
 // this service is running on the dst side and record the f and reset the dst
@@ -142,7 +219,7 @@ func (s *server) CheckpointContainer(ctx context.Context, req *pb.CheckpointRequ
 	}
 
 	// Return checkpoint response with the checkpoint data
-	return &pb.CheckpointResponse{CheckpointId: checkpointID, CheckpointData: buf.Bytes()}, nil
+	return &pb.CheckpointResponse{CheckpointId: checkpointID, CheckpointData: buf.Bytes(), BytesMigrateCheckpoint: int64(buf.Len())}, nil
 }
 
 func (s *server) TransferContainerInfo(ctx context.Context, req *pb.ContainerInfoRequest) (*pb.ContainerInfoResponse, error) {
@@ -253,7 +330,7 @@ func (s *server) TransferVolume(ctx context.Context, req *pb.VolumeRequest) (*pb
 			return nil, err
 		}
 
-		return &pb.VolumeResponse{VolumeName: volumeName, VolumeData: buf.Bytes(), Destination: destination}, nil
+		return &pb.VolumeResponse{VolumeName: volumeName, VolumeData: buf.Bytes(), Destination: destination, BytesMigrateVolume: int64(buf.Len())}, nil
 	}
 
 	// If the container has a nfs bind mount, return the NFS source.
