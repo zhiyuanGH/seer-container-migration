@@ -22,7 +22,7 @@ build: build-server build-client build-exp-collect-pf build-exp-collect-t
 # Build the exp_collect_t binary
 build-exp-collect-t:
 	go build -o $(EXP_COLLECT_MIGRATION_TIME_BINARY) $(EXP_COLLECT_MIGRATION_TIME_SRC)
-	
+
 # Build the exp_collect_pf binary
 build-exp-collect-pf:
 	go build -o $(EXP_COLLECT_PF_BINARY) $(EXP_COLLECT_PF_SRC)
@@ -44,6 +44,7 @@ install: build
 	cp $(SERVER_BINARY) $(INSTALL_DIR)
 	cp $(CLIENT_BINARY) $(INSTALL_DIR)
 	cp $(EXP_COLLECT_PF_BINARY) $(INSTALL_DIR)
+	cp $(EXP_COLLECT_MIGRATION_TIME_BINARY) $(INSTALL_DIR)
 
 .PHONY: all build build-server build-client clean install
 
