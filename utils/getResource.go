@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-//currently two places use this function:
+//currently two places use this function: 
 //1. when checkpointing a container, we need to get the nfsSource
 //2. when restoring a container, we need to check whether already have the volume dir, if so, we need to delete it, but we need to unmount it first to avoid affecting the source
 
