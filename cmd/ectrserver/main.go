@@ -129,6 +129,12 @@ func (s *server) RecordFReset(ctx context.Context, req *pb.RecordRequest) (*pb.R
 		return &pb.RecordResponse{Success: false}, err
 	}
 	fmt.Println("Container exited, recording F: ", req.RecordFileName)
+	if req.RecordFileName == "" {
+		fmt.Println("No record file to rename")
+		exp.ResetOverlay()
+		return &pb.RecordResponse{Success: true}, nil
+	}
+	fmt.Println("Renaming the filename of the record file: ", req.RecordFileName)
 	if err := exp.RenameRecordFile(req.RecordFileName); err != nil {
 		fmt.Printf("Error renaming record file F on dst: %v", err)
 		return &pb.RecordResponse{Success: false}, err

@@ -5,6 +5,30 @@ import (
 	"time"
 )
 
+func ResetOverlay() {
+	executor := &RealCommandExecutor{}
+	commands := [][]string{
+		{"systemctl", "restart", "docker"},
+		{"docker", "system", "prune", "-af"},
+		{"systemctl", "restart", "docker"},
+		{"systemctl", "restart", "containerd"},
+		{"systemctl", "restart", "docker"},
+	}
+
+	for _, args := range commands {
+		// Execute the command using the executor
+		log.Printf("Executing: sudo %v\n", args)
+		stdout, stderr, err := executor.Execute(args)
+		if err != nil {
+			log.Printf("Command failed: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
+			continue
+		}
+		time.Sleep(1 * time.Second)
+	}
+	log.Println("OverlayFS reset completed successfully.")
+}
+
+
 func Reset() {
 	executor := &RealCommandExecutor{}
 	commands := [][]string{
@@ -62,5 +86,5 @@ func Reset() {
 		time.Sleep(1 * time.Second)
 	}
 
-	log.Println("Docker reset completed successfully.")
+	log.Println("Stargz reset completed successfully.")
 }

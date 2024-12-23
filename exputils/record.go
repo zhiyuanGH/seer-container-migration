@@ -9,6 +9,9 @@ import (
 
 // RenameRecordFile renames the file and creates the target directory if it does not exist
 func RenameRecordFile(filename string) error {
+	if filename == "" {
+		return nil
+	}
 	fmt.Println("Renaming the filename of the record file: ", filename)
 
 	// Split the filename into parts using "/"
@@ -44,4 +47,3 @@ func RenameRecordFile(filename string) error {
 	}
 	return nil
 }
-

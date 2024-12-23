@@ -89,6 +89,12 @@ func main() {
 			}
 			if res.Success {
 				fmt.Printf("New container restored on %s with ID: %s\n", *dst, res.ContainerId)
+				recordReq := &pb.RecordRequest{ContainerName: alias, RecordFileName: ""}
+				recordClient := pb.NewRecordFClient(conn)
+				_, err := recordClient.RecordFReset(context.Background(), recordReq)
+				if err != nil {
+					fmt.Printf("Record F failed: %v\n", err)
+				}
 
 				BytesMigrateCheckpoint := res.BytesMigrateCheckpoint
 				BytesMigrateImage := res.BytesMigrateImage
@@ -97,7 +103,7 @@ func main() {
 				fmt.Printf("BytesMigrateCheckpoint for migrating %s: %d \n", alias,BytesMigrateCheckpoint)
 				fmt.Printf("BytesMigrateImage for migrating %s: %d \n", alias,BytesMigrateImage)
 				fmt.Printf("BytesMigrateVolume for migrating %s: %d \n", alias,BytesMigrateVolume)
-				err := recordMigrationData(csvFilePath, alias, i+1, BytesMigrateCheckpoint, BytesMigrateImage, BytesMigrateVolume)
+				err = recordMigrationData(csvFilePath, alias, i+1, BytesMigrateCheckpoint, BytesMigrateImage, BytesMigrateVolume)
 				if err != nil {
 					log.Printf("Failed to record migration data: %v", err)
 				} else {
@@ -163,6 +169,7 @@ func recordMigrationData(filePath, alias string, iteration int, bytesCheckpoint,
 			}
 		}
 	}
+
 
 	// Prepare the record to be written
 	record := []string{
