@@ -4,6 +4,7 @@ package migration;
 
 option go_package = "pkg/migration";
 
+import "google/protobuf/duration.proto";
 
 service ContainerMigration {
     rpc CheckpointContainer (CheckpointRequest) returns (CheckpointResponse);
@@ -42,6 +43,10 @@ message PullResponse {
     int64 bytesMigrateImage = 3;
     int64 bytesMigrateVolume = 4;
     int64 bytesMigrateCheckpoint = 5;
+    google.protobuf.Duration secondsMigrateImage = 6;
+    google.protobuf.Duration secondsMigrateVolume = 7;
+    google.protobuf.Duration secondsMigrateCheckpoint = 8;
+
 }
 
 message CheckpointRequest {

@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/docker/docker/api/types/checkpoint"
 	"github.com/docker/docker/client"
@@ -33,14 +34,14 @@ type server struct {
 	pb.UnimplementedRecordFServer
 }
 
-func pullContainer(addr string, containerID string, recordfilename string) (string, int64, int64, int64, error) {
+func pullContainer(addr string, containerID string, recordfilename string) (string, int64, int64, int64, time.Duration, time.Duration, time.Duration, error) {
 
 	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
 		grpc.MaxCallRecvMsgSize(200*1024*1024),
 	))
 
 	if err != nil {
-		return "", 0, 0, 0, fmt.Errorf("did not connect: %v", err)
+		return "", 0, 0, 0, 0, 0, 0, fmt.Errorf("did not connect: %v", err)
 	}
 	defer conn.Close()
 
@@ -51,12 +52,12 @@ func pullContainer(addr string, containerID string, recordfilename string) (stri
 	infoReq := &pb.ContainerInfoRequest{ContainerId: containerID}
 	infoRes, err := grpcClient.TransferContainerInfo(context.Background(), infoReq)
 	if err != nil {
-		return "", 0, 0, 0, fmt.Errorf("could not get container info: %v", err)
+		return "", 0, 0, 0, 0, 0, 0, fmt.Errorf("could not get container info: %v", err)
 	}
 	var containerInfo types.ContainerJSON
 	err = json.Unmarshal(infoRes.ContainerInfo, &containerInfo)
 	if err != nil {
-		return "", 0, 0, 0, fmt.Errorf("could not unmarshal container info: %v", err)
+		return "", 0, 0, 0, 0, 0, 0, fmt.Errorf("could not unmarshal container info: %v", err)
 	}
 	fmt.Printf("Container Name: %s\n", containerInfo.Name)
 	fmt.Printf("Container Image: %s\n", containerInfo.Config.Image)
@@ -64,48 +65,59 @@ func pullContainer(addr string, containerID string, recordfilename string) (stri
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		return "", 0, 0, 0, fmt.Errorf("error creating Docker client: %v", err)
+		return "", 0, 0, 0, 0, 0, 0, fmt.Errorf("error creating Docker client: %v", err)
 	}
 
-	trafficMigrateImage, err := m.PullImageIfNotExists(cli, containerInfo.Config.Image)
+	BytesMigrateImage, DurationMigrateImage, err := m.PullImageIfNotExists(cli, containerInfo.Config.Image)
 	if err != nil {
-		return "", 0, 0, 0, fmt.Errorf("error pulling image: %v", err)
+		return "", 0, 0, 0, 0, 0, 0, fmt.Errorf("error pulling image: %v", err)
 	}
 
 	fmt.Printf("Pulled image %s successfully \n", containerInfo.Config.Image)
 
+	// migrate volume
+	startTimeVolume := time.Now()
 	volReq := &pb.VolumeRequest{ContainerId: containerID}
 	volRes, err := grpcClient.TransferVolume(context.Background(), volReq)
 
 	if err != nil {
-		return "", 0, 0, 0, fmt.Errorf("could not transfer volume: %v", err)
+		return "", 0, 0, 0, 0, 0, 0, fmt.Errorf("could not transfer volume: %v", err)
 	}
 	fmt.Printf("got volume res \n")
 	BytesMigrateVolume := volRes.BytesMigrateVolume
 
 	binds, volCreateErr := m.Createvolume(volRes)
 	if volCreateErr != nil {
-		return "", 0, 0, 0, fmt.Errorf("could not create volume: %v", volCreateErr)
+		return "", 0, 0, 0, 0, 0, 0, fmt.Errorf("could not create volume: %v", volCreateErr)
 	}
+	//finish migrate volume
+	SecondsMigrateVolume := time.Since(startTimeVolume)
 
+	//start migrate checkpoint
+	startTimeCheckpoint := time.Now()
 	req := &pb.CheckpointRequest{ContainerId: containerID, RecordFileName: recordfilename}
 	res, err := grpcClient.CheckpointContainer(context.Background(), req)
 
 	if err != nil {
-		return "", 0, 0, 0, fmt.Errorf("could not checkpoint container: %v", err)
+		return "", 0, 0, 0, 0, 0, 0, fmt.Errorf("could not checkpoint container: %v", err)
 	}
 	fmt.Print("got checkpoint res \n")
 	BytesMigrateCheckpoint := res.BytesMigrateCheckpoint
+	//finish migrate checkpoint
+	DurationMigrateCheckpoint := time.Since(startTimeCheckpoint)
 
-	newContainerID, err := m.RestoreContainer(res.CheckpointData, containerInfo.Config.Image, containerInfo.Name, binds)
+	newContainerID, DurationCreateFS, DurationExtractCheckpoint, err := m.RestoreContainer(res.CheckpointData, containerInfo.Config.Image, containerInfo.Name, binds)
 	if err != nil {
-		return "", 0, 0, 0, fmt.Errorf("could not restore container: %v", err)
+		return "", 0, 0, 0, 0, 0, 0, fmt.Errorf("could not restore container: %v", err)
 	}
 
 	endTime := time.Now()
 	elapsedTime := endTime.Sub(startTime)
 	fmt.Printf("Time taken from checkpointing container to finishing restore: %s\n", elapsedTime)
-	return newContainerID, trafficMigrateImage, BytesMigrateCheckpoint, BytesMigrateVolume, nil
+
+	SecondsMigrateImage := DurationMigrateImage + DurationCreateFS
+	SecondsMigrateCheckpoint := DurationMigrateCheckpoint + DurationExtractCheckpoint
+	return newContainerID, BytesMigrateImage, BytesMigrateCheckpoint, BytesMigrateVolume, SecondsMigrateImage, SecondsMigrateCheckpoint, SecondsMigrateVolume, nil
 }
 
 func (s *server) PullContainer(ctx context.Context, req *pb.PullRequest) (*pb.PullResponse, error) {
@@ -113,13 +125,22 @@ func (s *server) PullContainer(ctx context.Context, req *pb.PullRequest) (*pb.Pu
 	fmt.Printf("Received request to pull container from: %s\n", req.DestinationAddr)
 	addr := req.DestinationAddr
 	containerName := req.ContainerName
-	newContainerID, trafficMigrateImage, BytesMigrateCheckpoint, BytesMigrateVolume, err := pullContainer(addr, containerName, req.RecordFileName)
+	newContainerID, BytesMigrateImage, BytesMigrateCheckpoint, BytesMigrateVolume, SecondsMigrateImage, SecondsMigrateCheckpoint, SecondsMigrateVolume, err := pullContainer(addr, containerName, req.RecordFileName)
 	if err != nil {
 		log.Fatalf("Container migration failed: %v", err)
-		return &pb.PullResponse{ContainerId: containerName, BytesMigrateImage: trafficMigrateImage, Success: false}, err
+		return &pb.PullResponse{ContainerId: containerName, BytesMigrateImage: BytesMigrateImage, Success: false}, err
 	}
 	fmt.Printf("New container restored with ID: %s\n", newContainerID) // revise to log
-	return &pb.PullResponse{ContainerId: newContainerID, BytesMigrateImage: trafficMigrateImage, BytesMigrateCheckpoint: BytesMigrateCheckpoint, BytesMigrateVolume: BytesMigrateVolume, Success: true}, nil
+	return &pb.PullResponse{
+		ContainerId:              newContainerID,
+		BytesMigrateImage:        BytesMigrateImage,
+		BytesMigrateCheckpoint:   BytesMigrateCheckpoint,
+		BytesMigrateVolume:       BytesMigrateVolume,
+		SecondsMigrateImage:      durationpb.New(SecondsMigrateImage),
+		SecondsMigrateCheckpoint: durationpb.New(SecondsMigrateCheckpoint),
+		SecondsMigrateVolume:     durationpb.New(SecondsMigrateVolume),
+		Success:                  true,
+	}, nil
 }
 
 // this service is running on the dst side and record the f and reset the dst

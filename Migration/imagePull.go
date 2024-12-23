@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
+	"io"
+	"time"
 )
 
 // ImagePullProgress represents the structure of progress messages from Docker ImagePull.
@@ -16,8 +16,8 @@ type ImagePullProgress struct {
 	ID             string `json:"id,omitempty"` // Typically the layer ID
 	Progress       string `json:"progress,omitempty"`
 	ProgressDetail struct {
-		Current int64  `json:"current"`
-		Total   int64  `json:"total"`
+		Current int64 `json:"current"`
+		Total   int64 `json:"total"`
 	} `json:"progressDetail,omitempty"`
 	Digest string `json:"digest,omitempty"`
 	Error  string `json:"error,omitempty"`
@@ -25,14 +25,19 @@ type ImagePullProgress struct {
 
 // PullImageIfNotExists checks if a Docker image exists locally.
 // If not, it pulls the image and returns the total compressed bytes pulled.
-func PullImageIfNotExists(cli *client.Client, imageName string) (int64, error) {
+func PullImageIfNotExists(cli *client.Client, imageName string) (BytesMigrateImage int64, duration time.Duration, err error) {
+	startTime := time.Now() // Record the start time
+	defer func() {
+		duration = time.Since(startTime) // Calculate duration when the function returns
+	}()
+
 	ctx := context.Background()
 
 	// Inspect the image to check if it exists locally
-	_, _, err := cli.ImageInspectWithRaw(ctx, imageName)
-	if err == nil {
+	_, _, Inspecerr := cli.ImageInspectWithRaw(ctx, imageName)
+	if Inspecerr == nil {
 		fmt.Printf("Image %s already exists locally.\n", imageName)
-		return 0, nil
+		return 0, duration, nil
 	}
 
 	// Image not found locally; proceed to pull
@@ -41,7 +46,7 @@ func PullImageIfNotExists(cli *client.Client, imageName string) (int64, error) {
 	// Pull the image
 	reader, err := cli.ImagePull(ctx, imageName, image.PullOptions{})
 	if err != nil {
-		return 0, fmt.Errorf("could not pull image: %v", err)
+		return 0, duration, fmt.Errorf("could not pull image: %v", err)
 	}
 	defer reader.Close()
 
@@ -60,7 +65,7 @@ func PullImageIfNotExists(cli *client.Client, imageName string) (int64, error) {
 		if err := decoder.Decode(&progress); err == io.EOF {
 			break
 		} else if err != nil {
-			return 0, fmt.Errorf("error decoding image pull progress: %v", err)
+			return 0, duration, fmt.Errorf("error decoding image pull progress: %v", err)
 		}
 
 		// Only consider progress messages related to downloading layers
@@ -77,5 +82,5 @@ func PullImageIfNotExists(cli *client.Client, imageName string) (int64, error) {
 			progress.Status, progress.ID, progress.Progress, progress.ProgressDetail.Current, progress.ProgressDetail.Total)
 	}
 
-	return totalBytes, nil
+	return totalBytes, duration, nil
 }
