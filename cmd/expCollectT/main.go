@@ -37,7 +37,7 @@ func main() {
 	for _, imageName := range containerList {
 		for i := 0; i < 3; i++ {
 			// Reset the src
-			exp.ResetOverlay()
+			exp.Reset()
 
 			// Extract the container alias and write the record file name
 			commandArgs, ok := containerCommands[imageName]
