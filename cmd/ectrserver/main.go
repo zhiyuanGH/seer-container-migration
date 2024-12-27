@@ -144,9 +144,12 @@ func (s *server) PullContainer(ctx context.Context, req *pb.PullRequest) (*pb.Pu
 }
 
 // this service is running on the dst side and record the f and reset the dst
+//IF recordFileName is empty, it means there is no record file to rename, and it is a expT
+
 func (s *server) RecordFReset(ctx context.Context, req *pb.RecordRequest) (*pb.RecordResponse, error) {
 	fmt.Println("Wait for the container to run: ", req.ContainerName)
-	if err := exp.Wait(req.ContainerName); err != nil {
+	timeoutDuration := 60 * time.Second
+	if err := exp.Wait(req.ContainerName, timeoutDuration); err != nil {
 		return &pb.RecordResponse{Success: false}, err
 	}
 	fmt.Println("Container exited, recording F: ", req.RecordFileName)
