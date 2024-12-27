@@ -35,7 +35,6 @@ func RestoreContainer(checkpointData []byte, image string, name string, binds st
 	startTime := time.Now()
 	newResp, err := cli.ContainerCreate(context.Background(), &container.Config{
 		Image: image,
-		Cmd:   []string{"sh", "-c", "i=0; while true; do echo $i; i=$((i+1)); sleep 1; done"},
 		Tty:   false,
 	}, &container.HostConfig{
 		Binds: bindList, // Use bindList which is nil if binds was empty
@@ -48,7 +47,7 @@ func RestoreContainer(checkpointData []byte, image string, name string, binds st
 	fmt.Printf("Create container snapshot duration: %v\n", DurationCreateFS)
 
 
-	startTime = time.Now()
+	startTimeCheckpoint := time.Now()
 	// Create checkpoint directory
 	checkpointDir := fmt.Sprintf("/var/lib/docker/containers/%s/checkpoints/checkpoint1", newResp.ID)
 	err = os.MkdirAll(checkpointDir, os.ModePerm)
@@ -100,7 +99,7 @@ func RestoreContainer(checkpointData []byte, image string, name string, binds st
 	if err != nil {
 		return "", time.Duration(0), time.Duration(0), fmt.Errorf("error starting container: %v", err)
 	}
-	DurationExtractCheckpoint = time.Since(startTime)
+	DurationExtractCheckpoint = time.Since(startTimeCheckpoint)
 	fmt.Printf("Extract checkpoint duration: %v\n", DurationExtractCheckpoint)
 	fmt.Printf("Container started successfully with ID: %s\n", newResp.ID)
 

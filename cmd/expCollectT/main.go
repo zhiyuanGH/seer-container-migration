@@ -149,14 +149,14 @@ var containerCommands = map[string][]string{
 	"192.168.116.150:5000/node:esgz":       {},
 	"192.168.116.150:5000/cnn:esgz":        {"python3", "-u", "main.py", "--batch-size", "64", "--test-batch-size", "1000", "--epochs", "10", "--lr", "0.1", "--gamma", "0.7", "--log-interval", "1", "--save-model"},
 	"192.168.116.150:5000/postgres:esgz":   {},
-	"192.168.116.150:5000/tensorflow:esgz": {"--epochs", "5"},
+	"192.168.116.150:5000/tensorflow:esgz": {"--epochs", "15"},
 	"192.168.116.150:5000/tomcat:esgz":     {},
 }
 
 var containerList = []string{
 	// "192.168.116.150:5000/cnn:esgz",
 	// "192.168.116.150:5000/node:esgz",
-	"192.168.116.150:5000/tensorflow:esgz",
+	// "192.168.116.150:5000/tensorflow:esgz",
 	"192.168.116.150:5000/tomcat:esgz",
 	
 	
