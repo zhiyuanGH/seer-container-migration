@@ -40,7 +40,7 @@ clean:
 	rm -f $(SERVER_BINARY) $(CLIENT_BINARY)
 
 # Install the binaries to the system's bin directory
-install: build
+install: 
 	cp $(SERVER_BINARY) $(INSTALL_DIR)
 	cp $(CLIENT_BINARY) $(INSTALL_DIR)
 	cp $(EXP_COLLECT_PF_BINARY) $(INSTALL_DIR)
