@@ -64,6 +64,7 @@ func main() {
 
 	for _, bw := range cfg.BandwidthLimit {
 		// Set bandwidth limit
+		log.Printf("Setting bandwidth limit to %d Mbit/s\n", bw)
 		bwreq := &pb.BandwidthLimitRequest{BandwidthLimit: int64(bw)}
 		beClientRegistry := pb.NewSetBandwidthLimitClient(registryconn)
 		if _, err := beClientRegistry.SetBandwidthLimit(context.Background(), bwreq); err != nil {

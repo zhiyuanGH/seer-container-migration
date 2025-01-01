@@ -43,9 +43,8 @@ func SetBW(bw int) error {
 		stdout, stderr, err := executor.Execute(args)
 
 		if err != nil {
-			return fmt.Errorf("command failed: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
+			log.Printf("Command failed: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
 		}
-
 		// Optional: Wait for a short duration between commands to ensure they execute properly
 		time.Sleep(1 * time.Second)
 	}
