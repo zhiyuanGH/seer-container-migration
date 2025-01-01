@@ -32,6 +32,7 @@ type server struct {
 	pb.UnimplementedContainerMigrationServer
 	pb.UnimplementedPullContainerServer
 	pb.UnimplementedRecordFServer
+	pb.UnimplementedSetBandwidthLimitServer
 }
 
 func (s *server) SetBandwidthLimit(ctx context.Context, req *pb.BandwidthLimitRequest) (*pb.BandwidthLimitResponse, error) {
@@ -414,6 +415,7 @@ func main() {
 	pb.RegisterContainerMigrationServer(grpcServer, &server{})
 	pb.RegisterPullContainerServer(grpcServer, &server{}) // Register PullContainer service
 	pb.RegisterRecordFServer(grpcServer, &server{})       // Register RecordF service
+	pb.RegisterSetBandwidthLimitServer(grpcServer, &server{}) // Register SetBandwidthLimit service
 
 	log.Printf("Server listening at %v", lis.Addr())
 	fmt.Println("Testing")
