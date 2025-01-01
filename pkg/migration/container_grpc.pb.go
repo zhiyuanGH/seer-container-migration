@@ -347,3 +347,89 @@ var RecordF_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "proto/container.proto",
 }
+
+// SetBandwidthLimitClient is the client API for SetBandwidthLimit service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type SetBandwidthLimitClient interface {
+	SetBandwidthLimit(ctx context.Context, in *BandwidthLimitRequest, opts ...grpc.CallOption) (*BandwidthLimitResponse, error)
+}
+
+type setBandwidthLimitClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewSetBandwidthLimitClient(cc grpc.ClientConnInterface) SetBandwidthLimitClient {
+	return &setBandwidthLimitClient{cc}
+}
+
+func (c *setBandwidthLimitClient) SetBandwidthLimit(ctx context.Context, in *BandwidthLimitRequest, opts ...grpc.CallOption) (*BandwidthLimitResponse, error) {
+	out := new(BandwidthLimitResponse)
+	err := c.cc.Invoke(ctx, "/migration.SetBandwidthLimit/SetBandwidthLimit", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SetBandwidthLimitServer is the server API for SetBandwidthLimit service.
+// All implementations must embed UnimplementedSetBandwidthLimitServer
+// for forward compatibility
+type SetBandwidthLimitServer interface {
+	SetBandwidthLimit(context.Context, *BandwidthLimitRequest) (*BandwidthLimitResponse, error)
+	mustEmbedUnimplementedSetBandwidthLimitServer()
+}
+
+// UnimplementedSetBandwidthLimitServer must be embedded to have forward compatible implementations.
+type UnimplementedSetBandwidthLimitServer struct {
+}
+
+func (UnimplementedSetBandwidthLimitServer) SetBandwidthLimit(context.Context, *BandwidthLimitRequest) (*BandwidthLimitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetBandwidthLimit not implemented")
+}
+func (UnimplementedSetBandwidthLimitServer) mustEmbedUnimplementedSetBandwidthLimitServer() {}
+
+// UnsafeSetBandwidthLimitServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to SetBandwidthLimitServer will
+// result in compilation errors.
+type UnsafeSetBandwidthLimitServer interface {
+	mustEmbedUnimplementedSetBandwidthLimitServer()
+}
+
+func RegisterSetBandwidthLimitServer(s grpc.ServiceRegistrar, srv SetBandwidthLimitServer) {
+	s.RegisterService(&SetBandwidthLimit_ServiceDesc, srv)
+}
+
+func _SetBandwidthLimit_SetBandwidthLimit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BandwidthLimitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SetBandwidthLimitServer).SetBandwidthLimit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/migration.SetBandwidthLimit/SetBandwidthLimit",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SetBandwidthLimitServer).SetBandwidthLimit(ctx, req.(*BandwidthLimitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// SetBandwidthLimit_ServiceDesc is the grpc.ServiceDesc for SetBandwidthLimit service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var SetBandwidthLimit_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "migration.SetBandwidthLimit",
+	HandlerType: (*SetBandwidthLimitServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "SetBandwidthLimit",
+			Handler:    _SetBandwidthLimit_SetBandwidthLimit_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "proto/container.proto",
+}

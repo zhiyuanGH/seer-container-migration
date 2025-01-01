@@ -6,51 +6,73 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"encoding/json"
+	"io/ioutil"
 
 	exp "github.com/zhiyuanGH/container-joint-migration/exputils"
 	pb "github.com/zhiyuanGH/container-joint-migration/pkg/migration"
 	"google.golang.org/grpc"
 )
 
+type Config struct {
+	ImageFlags        map[string][]string `json:"imageFlags"`
+	ContainerAlias    map[string]string   `json:"containerAlias"`
+	ContainerCommands map[string][]string `json:"containerCommands"`
+	ContainerList     []string            `json:"containerList"`
+	Iteration   int `json:"iteration"`
+}
+
+// loadConfig reads the JSON config file and unmarshals it into Config
+func loadConfig(path string) (*Config, error) {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file %s: %w", path, err)
+	}
+
+	var cfg Config
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
+	return &cfg, nil
+}
+
 func main() {
-	// Define flags for server address and container ID with default values
-	src := flag.String("src", "192.168.116.148:50051", "Server address for source host ")
+	src := flag.String("src", "192.168.116.148:50051", "Server address for source host")
 	dst := flag.String("dst", "192.168.116.149:50051", "Server address for destination host")
-	executor := &exp.RealCommandExecutor{}
-	fmt.Println("Testing")
+	// csvFilePath := flag.String("csv", "/home/base/code/box/data_pf/dataCurrnet.csv", "Path to CSV output file")
+	configPath := flag.String("config", "/home/base/code/container-joint-migration/config.json", "Path to the JSON config file")
 
-	// Parse the flags
 	flag.Parse()
-
-	// Define flags for each image (can add more flags as needed)
-	imageFlags := map[string][]string{
-		"192.168.116.150:5000/cnn:esgz":      {"-v", "/mnt/nfs_share:/data"}, // Example of port flag for cnn image
-		"192.168.116.150:5000/node:esgz":     {"-p", "8080:80"},              // Example of port flag for node image
-		"192.168.116.150:5000/postgres:esgz": {},
+	executor := &exp.RealCommandExecutor{}
+	// 2. Parse config file
+	cfg, err := loadConfig(*configPath)
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
 	}
 
 	// Migrate the container using the provided or default server address and container ID
-	for _, imageName := range containerList {
-		for i := 0; i < 3; i++ {
+	for _, imageName := range cfg.ContainerList {
+		for i := 0; i < cfg.Iteration; i++ {
+			// Grab everything from cfg
+			commandArgs, okCmd := cfg.ContainerCommands[imageName]
+			alias, okAlias := cfg.ContainerAlias[imageName]
+			imageSpecificFlags, okFlags := cfg.ImageFlags[imageName]
+
+			if !okCmd {
+				commandArgs = []string{}
+			}
+			if !okAlias {
+				alias = "container"
+			}
+			if !okFlags {
+				imageSpecificFlags = []string{}
+			}
 			// Reset the src
 			exp.Reset()
 
-			// Extract the container alias and write the record file name
-			commandArgs, ok := containerCommands[imageName]
-			alias, okAlias := containeralias[imageName]
-			if !ok || !okAlias {
-				log.Printf("No command found for image: %s", imageName)
-				continue
-			}
+
 			recordPFileName := fmt.Sprintf("/home/base/code/box/data_p/%s/%s_%d.csv", alias, alias, i+1)
 			recordFFileName := fmt.Sprintf("/home/base/code/box/data_f/%s/%s_%d.csv", alias, alias, i+1)
-
-			// Get the specific flags for the current image
-			imageSpecificFlags, ok := imageFlags[imageName]
-			if !ok {
-				log.Printf("No specific flags found for image: %s", imageName)
-				continue
-			}
 
 			// Run the container on src
 			args := append([]string{"docker", "run", "-d", "--name", alias}, imageSpecificFlags...)
@@ -102,20 +124,3 @@ func main() {
 	}
 }
 
-var containeralias = map[string]string{
-	"192.168.116.150:5000/cnn:esgz":      "cnn",
-	"192.168.116.150:5000/node:esgz":     "node",
-	"192.168.116.150:5000/postgres:esgz": "postgres",
-}
-
-var containerCommands = map[string][]string{
-	"192.168.116.150:5000/node:esgz":     {},
-	"192.168.116.150:5000/cnn:esgz":      {"python3", "-u", "main.py", "--batch-size", "64", "--test-batch-size", "1000", "--epochs", "1", "--lr", "0.1", "--gamma", "0.7", "--log-interval", "1", "--save-model"},
-	"192.168.116.150:5000/postgres:esgz": {},
-}
-
-var containerList = []string{
-	// "192.168.116.150:5000/cnn:esgz",
-	// "192.168.116.150:5000/node:esgz",
-	"192.168.116.150:5000/postgres:esgz",
-}

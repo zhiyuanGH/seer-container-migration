@@ -10,6 +10,8 @@ func ResetOverlay() {
 	commands := [][]string{
 		{"systemctl", "restart", "docker"},
 		{"docker", "system", "prune", "-af"},
+		{"systemctl", "stop", "docker"},
+		{"sh", "-c", "rm -rf /var/lib/docker/overlay2/*"},
 		{"systemctl", "restart", "docker"},
 		{"systemctl", "restart", "containerd"},
 		{"systemctl", "restart", "docker"},
@@ -27,7 +29,6 @@ func ResetOverlay() {
 	}
 	log.Println("OverlayFS reset completed successfully.")
 }
-
 
 func Reset() {
 	executor := &RealCommandExecutor{}

@@ -34,6 +34,14 @@ type server struct {
 	pb.UnimplementedRecordFServer
 }
 
+func (s *server) SetBandwidthLimit(ctx context.Context, req *pb.BandwidthLimitRequest) (*pb.BandwidthLimitResponse, error) {
+	BandwidthLimit := req.GetBandwidthLimit()
+	if err := exp.SetBW(int(BandwidthLimit)); err != nil {
+		return &pb.BandwidthLimitResponse{Success: false}, err
+	}
+	return &pb.BandwidthLimitResponse{Success: true}, nil
+}
+
 func pullContainer(addr string, containerID string, recordfilename string) (string, int64, int64, int64, time.Duration, time.Duration, time.Duration, error) {
 
 	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDefaultCallOptions(

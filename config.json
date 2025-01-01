@@ -74,7 +74,7 @@
             "--test-batch-size",
             "1000",
             "--epochs",
-            "10",
+            "30",
             "--lr",
             "0.1",
             "--gamma",
@@ -99,6 +99,16 @@
         ]
     },
     "containerList": [
+        "192.168.116.150:5000/node:esgz",
+        "192.168.116.150:5000/tensorflow:esgz",
+        "192.168.116.150:5000/memcached:esgz",
+        "192.168.116.150:5000/wordpress:esgz",
+        "192.168.116.150:5000/python-demo:esgz",
+        "192.168.116.150:5000/golang-demo:esgz",
+        "192.168.116.150:5000/nginx:esgz",
+        "192.168.116.150:5000/alpine:esgz",
+        "192.168.116.150:5000/redis:esgz",
+        "192.168.116.150:5000/httpd:esgz",
         "192.168.116.150:5000/registry:esgz",
         "192.168.116.150:5000/php-demo:esgz"
     ],
@@ -108,13 +118,11 @@
         "192.168.116.150:5000/node:esgz",
         "192.168.116.150:5000/tensorflow:esgz",
         "192.168.116.150:5000/memcached:esgz",
-
         "192.168.116.150:5000/wordpress:esgz",
         "192.168.116.150:5000/python-demo:esgz",
         "192.168.116.150:5000/golang-demo:esgz",
         "192.168.116.150:5000/nginx:esgz",
         "192.168.116.150:5000/alpine:esgz",
-        
         "192.168.116.150:5000/redis:esgz",
         "192.168.116.150:5000/httpd:esgz",
         "192.168.116.150:5000/registry:esgz",
@@ -139,5 +147,12 @@
         "192.168.116.150:5000/rethinkdb:esgz",
         "192.168.116.150:5000/alpine:esgz"
     ],
-    "iteration": 1
+    "iteration": 45,
+    "bandwidth": [
+        100,
+        200,
+        300,
+        400,
+        500
+    ]
 }

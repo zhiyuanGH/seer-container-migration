@@ -21,9 +21,14 @@ service RecordF{
     rpc RecordFReset (RecordRequest) returns (RecordResponse);
 }
 
+service SetBandwidthLimit {
+    rpc SetBandwidthLimit (BandwidthLimitRequest) returns (BandwidthLimitResponse);
+}
+
 message RecordRequest {
     string record_file_name = 1;
     string container_name = 2;
+
 }
 
 message RecordResponse {
@@ -63,6 +68,15 @@ message CheckpointResponse {
 
 message VolumeRequest {
     string container_id = 1;
+}
+
+message BandwidthLimitRequest {
+
+    int64 bandwidth_limit = 1;
+}
+
+message BandwidthLimitResponse {
+    bool success = 1;
 }
 
 message VolumeResponse {

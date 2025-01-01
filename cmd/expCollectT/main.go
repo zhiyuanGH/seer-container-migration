@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"math/rand"
 	"encoding/csv"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"time"
 
@@ -23,17 +23,35 @@ type Config struct {
 	ContainerAlias    map[string]string   `json:"containerAlias"`
 	ContainerCommands map[string][]string `json:"containerCommands"`
 	ContainerList     []string            `json:"containerList"`
-	Iteration   int `json:"iteration"`
+	Iteration         int                 `json:"iteration"`
+	BandwidthLimit    []int               `json:"bandwidth"`
 }
 
 func main() {
 	// 1. Load flags
 	src := flag.String("src", "192.168.116.148:50051", "Server address for source host")
 	dst := flag.String("dst", "192.168.116.149:50051", "Server address for destination host")
+	registryAddr := flag.String("registry", "192.168.116.150:50051,", "Server address for registry host")
 	csvFilePath := flag.String("csv", "/home/base/code/box/data_t/dataCurrnet.csv", "Path to CSV output file")
 	configPath := flag.String("config", "/home/base/code/container-joint-migration/config.json", "Path to the JSON config file")
 
 	flag.Parse()
+
+	conn, err := grpc.Dial(*dst, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
+		grpc.MaxCallRecvMsgSize(200*1024*1024),
+	))
+	if err != nil {
+		log.Printf("Did not connect: %v\n", err)
+	}
+	defer conn.Close()
+
+	registryconn, err := grpc.Dial(*registryAddr, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
+		grpc.MaxCallRecvMsgSize(200*1024*1024),
+	))
+	if err != nil {
+		log.Printf("Did not connect: %v\n", err)
+	}
+	defer registryconn.Close()
 
 	// 2. Parse config file
 	cfg, err := loadConfig(*configPath)
@@ -44,104 +62,112 @@ func main() {
 	// 3. Begin main logic
 	executor := &exp.RealCommandExecutor{}
 
-	for _, imageName := range cfg.ContainerList {
-		for i := 0; i < cfg.Iteration; i++ {
-			// Reset the source side
-			exp.Reset()
+	for _, bw := range cfg.BandwidthLimit {
+		// Set bandwidth limit
+		bwreq := &pb.BandwidthLimitRequest{BandwidthLimit: int64(bw)}
+		beClientRegistry := pb.NewSetBandwidthLimitClient(registryconn)
+		if _, err := beClientRegistry.SetBandwidthLimit(context.Background(), bwreq); err != nil {
+			log.Printf("Failed to set bandwidth limit on registry: %v", err)
+			continue
+		}
+		if err := exp.SetBW(bw); err != nil {
+			log.Printf("Failed to set bandwidth limit: %v", err)
+			continue
+		}
+		//start iterate over the container list
+		for _, imageName := range cfg.ContainerList {
+			for i := 0; i < cfg.Iteration; i++ {
+				// Reset the source side
+				exp.ResetOverlay()
 
-			// Grab everything from cfg
-			commandArgs, okCmd := cfg.ContainerCommands[imageName]
-			alias, okAlias := cfg.ContainerAlias[imageName]
-			imageSpecificFlags, okFlags := cfg.ImageFlags[imageName]
+				// Grab everything from cfg
+				commandArgs, okCmd := cfg.ContainerCommands[imageName]
+				alias, okAlias := cfg.ContainerAlias[imageName]
+				imageSpecificFlags, okFlags := cfg.ImageFlags[imageName]
 
-			if !okCmd {
-				commandArgs = []string{}
-			}
-			if !okAlias {
-				alias = "container"
-			}
-			if !okFlags {
-				imageSpecificFlags = []string{}
-			}
-
-			// Start container on src
-			args := append([]string{"docker", "run", "-d", "--name", alias}, imageSpecificFlags...)
-			args = append(args, imageName)
-			args = append(args, commandArgs...)
-
-			log.Printf("Executing: sudo %v\n", args)
-			if _, _, err := executor.Execute(args); err != nil {
-				log.Printf("Error during 'docker run': %v", err)
-				continue
-			}
-
-			// Sleep for a random time
-			log.Printf("Waiting for random time...")
-			time.Sleep(time.Duration(rand.Intn(30)) * time.Second)
-
-			log.Printf("Finish Waiting.")
-
-			// Migrate the container
-			req := &pb.PullRequest{DestinationAddr: *src, ContainerName: alias}
-			conn, err := grpc.Dial(*dst, grpc.WithInsecure(), grpc.WithDefaultCallOptions(
-				grpc.MaxCallRecvMsgSize(200*1024*1024),
-			))
-			if err != nil {
-				log.Printf("Did not connect: %v\n", err)
-				continue
-			}
-			defer conn.Close()
-
-			client := pb.NewPullContainerClient(conn)
-
-			res, err := client.PullContainer(context.Background(), req)
-			if err != nil {
-				log.Printf("Container migration failed: %v\n", err)
-				continue
-			}
-
-			if res.Success {
-				// Logging logic
-				log.Printf("New container restored on %s with ID: %s\n", *dst, res.ContainerId)
-				recordReq := &pb.RecordRequest{
-					ContainerName:  alias,
-					RecordFileName: "",
+				if !okCmd {
+					commandArgs = []string{}
+				}
+				if !okAlias {
+					alias = "container"
+				}
+				if !okFlags {
+					imageSpecificFlags = []string{}
 				}
 
-				recordClient := pb.NewRecordFClient(conn)
-				if _, err := recordClient.RecordFReset(context.Background(), recordReq); err != nil {
-					log.Printf("Record F failed: %v\n", err)
+				// Start container on src
+				args := append([]string{"docker", "run", "-d", "--name", alias}, imageSpecificFlags...)
+				args = append(args, imageName)
+				args = append(args, commandArgs...)
+
+				log.Printf("Executing: sudo %v\n", args)
+				if _, _, err := executor.Execute(args); err != nil {
+					log.Printf("Error during 'docker run': %v", err)
+					continue
 				}
 
-				BytesMigrateCheckpoint := res.BytesMigrateCheckpoint
-				BytesMigrateImage := res.BytesMigrateImage
-				BytesMigrateVolume := res.BytesMigrateVolume
+				// Sleep for a random time
+				log.Printf("Waiting for random time...")
+				randomTime := time.Duration(rand.Intn(30)) * time.Second
+				time.Sleep(randomTime)
 
-				secondsMigrateImage := res.SecondsMigrateImage.AsDuration().Milliseconds()
-				secondsMigrateCheckpoint := res.SecondsMigrateCheckpoint.AsDuration().Milliseconds()
-				secondsMigrateVolume := res.SecondsMigrateVolume.AsDuration().Milliseconds()
+				log.Printf("Finish Waiting.")
 
-				log.Printf("BytesMigrateCheckpoint for %s: %d", alias, BytesMigrateCheckpoint)
-				log.Printf("BytesMigrateImage for %s: %d", alias, BytesMigrateImage)
-				log.Printf("BytesMigrateVolume for %s: %d", alias, BytesMigrateVolume)
-				log.Printf("SecondsMigrateCheckpoint for %s: %d", alias, secondsMigrateCheckpoint)
-				log.Printf("SecondsMigrateImage for %s: %d", alias, secondsMigrateImage)
-				log.Printf("SecondsMigrateVolume for %s: %d", alias, secondsMigrateVolume)
+				// Migrate the container
+				req := &pb.PullRequest{DestinationAddr: *src, ContainerName: alias}
 
-				if err := recordMigrationData(
-					*csvFilePath,
-					alias,
-					i+1,
-					BytesMigrateCheckpoint,
-					BytesMigrateImage,
-					BytesMigrateVolume,
-					secondsMigrateCheckpoint,
-					secondsMigrateImage,
-					secondsMigrateVolume,
-				); err != nil {
-					log.Printf("Failed to record migration data: %v", err)
-				} else {
-					log.Printf("Migration data recorded successfully for alias: %s, iteration: %d", alias, i+1)
+				client := pb.NewPullContainerClient(conn)
+
+				res, err := client.PullContainer(context.Background(), req)
+				if err != nil {
+					log.Printf("Container migration failed: %v\n", err)
+					continue
+				}
+
+				if res.Success {
+					// Logging logic
+					log.Printf("New container restored on %s with ID: %s\n", *dst, res.ContainerId)
+					recordReq := &pb.RecordRequest{
+						ContainerName:  alias,
+						RecordFileName: "",
+					}
+
+					recordClient := pb.NewRecordFClient(conn)
+					if _, err := recordClient.RecordFReset(context.Background(), recordReq); err != nil {
+						log.Printf("Record F failed: %v\n", err)
+					}
+
+					BytesMigrateCheckpoint := res.BytesMigrateCheckpoint
+					BytesMigrateImage := res.BytesMigrateImage
+					BytesMigrateVolume := res.BytesMigrateVolume
+
+					secondsMigrateImage := res.SecondsMigrateImage.AsDuration().Milliseconds()
+					secondsMigrateCheckpoint := res.SecondsMigrateCheckpoint.AsDuration().Milliseconds()
+					secondsMigrateVolume := res.SecondsMigrateVolume.AsDuration().Milliseconds()
+
+					log.Printf("BytesMigrateCheckpoint for %s: %d", alias, BytesMigrateCheckpoint)
+					log.Printf("BytesMigrateImage for %s: %d", alias, BytesMigrateImage)
+					log.Printf("BytesMigrateVolume for %s: %d", alias, BytesMigrateVolume)
+					log.Printf("SecondsMigrateCheckpoint for %s: %d", alias, secondsMigrateCheckpoint)
+					log.Printf("SecondsMigrateImage for %s: %d", alias, secondsMigrateImage)
+					log.Printf("SecondsMigrateVolume for %s: %d", alias, secondsMigrateVolume)
+
+					if err := recordMigrationData(
+						*csvFilePath,
+						alias,
+						i+1,
+						randomTime.Milliseconds(),
+						BytesMigrateCheckpoint,
+						BytesMigrateImage,
+						BytesMigrateVolume,
+						secondsMigrateCheckpoint,
+						secondsMigrateImage,
+						secondsMigrateVolume,
+					); err != nil {
+						log.Printf("Failed to record migration data: %v", err)
+					} else {
+						log.Printf("Migration data recorded successfully for alias: %s, iteration: %d", alias, i+1)
+					}
 				}
 			}
 		}
@@ -166,12 +192,12 @@ func loadConfig(path string) (*Config, error) {
 func recordMigrationData(
 	filePath, alias string,
 	iteration int,
-	bytesCheckpoint, bytesImage, bytesVolume int64,
+	migrateWhen, bytesCheckpoint, bytesImage, bytesVolume int64,
 	secondsCheckpoint, secondsImage, secondsVolume int64,
 ) error {
 	// your existing CSV logic...
 	header := []string{
-		"Time", "Alias", "Iteration",
+		"Time", "Alias", "Iteration", "MigrateWhen",
 		"BytesMigrateCheckpoint", "BytesMigrateImage", "BytesMigrateVolume",
 		"MillisecondsMigrateCheckpoint", "MillisecondsMigrateImage", "MillisecondsMigrateVolume",
 	}
@@ -190,7 +216,7 @@ func recordMigrationData(
 	defer writer.Flush()
 
 	if !fileExists {
-		
+
 		if err := writer.Write(header); err != nil {
 			return fmt.Errorf("failed to write header: %v", err)
 		}
@@ -211,6 +237,7 @@ func recordMigrationData(
 		time.Now().Format(time.RFC3339),
 		alias,
 		fmt.Sprintf("%d", iteration),
+		fmt.Sprintf("%d", migrateWhen),
 		fmt.Sprintf("%d", bytesCheckpoint),
 		fmt.Sprintf("%d", bytesImage),
 		fmt.Sprintf("%d", bytesVolume),
