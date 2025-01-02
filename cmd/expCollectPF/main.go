@@ -119,7 +119,7 @@ func main() {
 				}
 
 				// Wait for random time
-				sleeptime := time.Duration((i + 1) * time.Now().Second())
+				sleeptime := time.Duration(i+2) * time.Second
 				log.Printf("Waiting for time: %v\n", sleeptime)
 				time.Sleep(sleeptime)
 

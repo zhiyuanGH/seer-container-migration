@@ -34,9 +34,12 @@ func Reset() {
 	executor := &RealCommandExecutor{}
 	commands := [][]string{
 		{"systemctl", "restart", "docker"},
-		{"docker", "system", "prune", "-f"},
+		{"docker", "system", "prune", "-af"},
+		{"systemctl", "stop", "docker"},
+		{"sh", "-c", "rm -rf /var/lib/docker/overlay2/*"},
 		{"systemctl", "restart", "docker"},
 		{"systemctl", "restart", "containerd"},
+		{"systemctl", "restart", "docker"},
 	}
 	commands_2 := [][]string{
 		{"systemctl", "restart", "stargz-snapshotter"},

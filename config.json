@@ -105,13 +105,13 @@
           ]
     },
     "containerList": [
+
         "192.168.116.150:5000/gcc-demo:esgz",
         "192.168.116.150:5000/cnn:esgz",
         "192.168.116.150:5000/node:esgz",
         "192.168.116.150:5000/tensorflow:esgz",
         "192.168.116.150:5000/memcached:esgz",
 
-        "192.168.116.150:5000/wordpress:esgz",
         "192.168.116.150:5000/python-demo:esgz",
         "192.168.116.150:5000/golang-demo:esgz",
         "192.168.116.150:5000/nginx:esgz",
@@ -158,8 +158,8 @@
         "192.168.116.150:5000/rethinkdb:esgz",
         "192.168.116.150:5000/alpine:esgz"
     ],
-    "iteration": 1,
+    "iteration": 14,
     "bandwidth": [
-        100,200,500
+        1000
     ]
 }
