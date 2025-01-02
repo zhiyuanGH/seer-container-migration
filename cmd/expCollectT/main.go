@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/rand"
+	
 	"os"
 	"time"
 
@@ -107,10 +107,11 @@ func main() {
 					continue
 				}
 
-				// Sleep for a random time
-				log.Printf("Waiting for random time...")
-				randomTime := time.Duration(rand.Intn(30)) * time.Second
-				time.Sleep(randomTime)
+			
+				sleeptime := time.Duration((i + 1) * time.Now().Second())
+				log.Printf("Waiting for time: %v\n", sleeptime)
+				time.Sleep(sleeptime)
+
 
 				log.Printf("Finish Waiting.")
 
@@ -157,7 +158,7 @@ func main() {
 						*csvFilePath,
 						alias,
 						i+1,
-						randomTime.Milliseconds(),
+						sleeptime.Milliseconds(),
 						BytesMigrateCheckpoint,
 						BytesMigrateImage,
 						BytesMigrateVolume,

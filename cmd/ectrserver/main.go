@@ -154,25 +154,34 @@ func (s *server) PullContainer(ctx context.Context, req *pb.PullRequest) (*pb.Pu
 
 // this service is running on the dst side and record the f and reset the dst
 //IF recordFileName is empty, it means there is no record file to rename, and it is a expT
-
 func (s *server) RecordFReset(ctx context.Context, req *pb.RecordRequest) (*pb.RecordResponse, error) {
+	defer func() {
+		// if req.RecordFileName == "" execute ResetOverlay, else execute Reset
+		if req.RecordFileName == "" {
+			fmt.Println("No record file to rename, reseting overlay")
+			exp.ResetOverlay()
+		} else {
+			fmt.Println("Renaming the filename of the record file: ", req.RecordFileName)
+			exp.Reset()
+		}
+	}()
 	fmt.Println("Wait for the container to run: ", req.ContainerName)
 	timeoutDuration := 15 * time.Second
+
 	if err := exp.Wait(req.ContainerName, timeoutDuration); err != nil {
 		return &pb.RecordResponse{Success: false}, err
 	}
-	fmt.Println("Container exited, recording F: ", req.RecordFileName)
+
 	if req.RecordFileName == "" {
-		fmt.Println("No record file to rename")
-		exp.ResetOverlay()
 		return &pb.RecordResponse{Success: true}, nil
 	}
+
 	fmt.Println("Renaming the filename of the record file: ", req.RecordFileName)
 	if err := exp.RenameRecordFile(req.RecordFileName); err != nil {
 		fmt.Printf("Error renaming record file F on dst: %v", err)
 		return &pb.RecordResponse{Success: false}, err
 	}
-	exp.Reset()
+
 	return &pb.RecordResponse{Success: true}, nil
 }
 
@@ -413,8 +422,8 @@ func main() {
 
 	// Register both services
 	pb.RegisterContainerMigrationServer(grpcServer, &server{})
-	pb.RegisterPullContainerServer(grpcServer, &server{}) // Register PullContainer service
-	pb.RegisterRecordFServer(grpcServer, &server{})       // Register RecordF service
+	pb.RegisterPullContainerServer(grpcServer, &server{})     // Register PullContainer service
+	pb.RegisterRecordFServer(grpcServer, &server{})           // Register RecordF service
 	pb.RegisterSetBandwidthLimitServer(grpcServer, &server{}) // Register SetBandwidthLimit service
 
 	log.Printf("Server listening at %v", lis.Addr())

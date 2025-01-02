@@ -61,7 +61,8 @@
         "192.168.116.150:5000/redis:esgz": "redis",
         "192.168.116.150:5000/httpd:esgz": "httpd",
         "192.168.116.150:5000/registry:esgz": "registry",
-        "192.168.116.150:5000/php-demo:esgz": "php-demo"
+        "192.168.116.150:5000/php-demo:esgz": "php-demo",
+        "192.168.116.150:5000/perl:esgz": "perl"
     },
     "containerCommands": {
         "192.168.116.150:5000/node:esgz": [],
@@ -96,21 +97,31 @@
             "sh",
             "-c",
             "while true; do echo 'Still alive...'; sleep 5; done"
-        ]
+        ],
+        "192.168.116.150:5000/perl:esgz": [
+            "perl",
+            "-E",
+            "$SIG{TERM} = sub { $sig++; say \"recv TERM\" }; sleep 300; say \"waking up\" if $sig"
+          ]
     },
     "containerList": [
+        "192.168.116.150:5000/gcc-demo:esgz",
+        "192.168.116.150:5000/cnn:esgz",
         "192.168.116.150:5000/node:esgz",
         "192.168.116.150:5000/tensorflow:esgz",
         "192.168.116.150:5000/memcached:esgz",
+
         "192.168.116.150:5000/wordpress:esgz",
         "192.168.116.150:5000/python-demo:esgz",
         "192.168.116.150:5000/golang-demo:esgz",
         "192.168.116.150:5000/nginx:esgz",
         "192.168.116.150:5000/alpine:esgz",
+
         "192.168.116.150:5000/redis:esgz",
         "192.168.116.150:5000/httpd:esgz",
         "192.168.116.150:5000/registry:esgz",
         "192.168.116.150:5000/php-demo:esgz"
+
     ],
     "containerList-migratable": [
         "192.168.116.150:5000/gcc-demo:esgz",
@@ -149,10 +160,6 @@
     ],
     "iteration": 1,
     "bandwidth": [
-        100,
-        200,
-        300,
-        400,
-        500
+        100,200,500
     ]
 }
