@@ -37,6 +37,7 @@ func Reset() {
 		{"docker", "system", "prune", "-af"},
 		{"systemctl", "stop", "docker"},
 		{"sh", "-c", "rm -rf /var/lib/docker/*"},
+		{"sh", "-c", "rm -rf /var/lib/containerd/*"},
 		{"systemctl", "restart", "docker"},
 		{"systemctl", "restart", "containerd"},
 		{"systemctl", "restart", "docker"},
