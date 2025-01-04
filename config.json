@@ -2,7 +2,7 @@
     "imageFlags": {
         "192.168.116.150:5000/cnn:esgz": [
             "-v",
-            "/mnt/nfs_share:/data"
+            ":/data"
         ],
         "192.168.116.150:5000/node:esgz": [
             "-p",

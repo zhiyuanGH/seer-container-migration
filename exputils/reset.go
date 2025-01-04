@@ -5,18 +5,32 @@ import (
 	"time"
 )
 
-func ResetOverlay() {
-	executor := &RealCommandExecutor{}
-	commands := [][]string{
-		{"systemctl", "restart", "docker"},
-		{"docker", "system", "prune", "-af"},
-		{"systemctl", "stop", "docker"},
-		{"sh", "-c", "rm -rf /var/lib/docker/*"},
-		{"systemctl", "restart", "docker"},
-		{"systemctl", "restart", "containerd"},
-		{"systemctl", "restart", "docker"},
-	}
+func ResetOverlay(deleteImage ...bool) {
+	deleteImageFlag := true
 
+	if len(deleteImage) > 0 {
+		deleteImageFlag = deleteImage[0]
+	}
+	executor := &RealCommandExecutor{}
+	var commands [][]string
+	if deleteImageFlag {
+		commands = [][]string{
+			{"systemctl", "restart", "docker"},
+			{"docker", "system", "prune", "-af"},
+			{"systemctl", "stop", "docker"},
+			{"sh", "-c", "rm -rf /var/lib/docker/*"},
+			{"systemctl", "restart", "docker"},
+			{"systemctl", "restart", "containerd"},
+			{"systemctl", "restart", "docker"},
+		}
+	} else {
+		commands = [][]string{
+			{"systemctl", "restart", "docker"},
+			{"docker", "system", "prune", "-f"},
+			{"systemctl", "restart", "containerd"},
+			{"systemctl", "restart", "docker"},
+		}
+	}
 	for _, args := range commands {
 		// Execute the command using the executor
 		log.Printf("Executing: sudo %v\n", args)
