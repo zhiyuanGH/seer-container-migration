@@ -136,7 +136,7 @@ func (s *server) PullContainer(ctx context.Context, req *pb.PullRequest) (*pb.Pu
 	containerName := req.ContainerName
 	newContainerID, BytesMigrateImage, BytesMigrateCheckpoint, BytesMigrateVolume, SecondsMigrateImage, SecondsMigrateCheckpoint, SecondsMigrateVolume, err := pullContainer(addr, containerName, req.RecordFileName)
 	if err != nil {
-		log.Fatalf("Container migration failed: %v", err)
+		fmt.Printf("Error pulling container: %v\n", err)
 		return &pb.PullResponse{ContainerId: containerName, BytesMigrateImage: BytesMigrateImage, Success: false}, err
 	}
 	fmt.Printf("New container restored with ID: %s\n", newContainerID) // revise to log
