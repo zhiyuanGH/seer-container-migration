@@ -153,7 +153,7 @@ func (s *server) PullContainer(ctx context.Context, req *pb.PullRequest) (*pb.Pu
 }
 
 // this service is running on the dst side and record the f and reset the dst
-//IF recordFileName is empty, it means there is no record file to rename, and it is a expT
+// IF recordFileName is empty, it means there is no record file to rename, and it is a expT
 func (s *server) RecordFReset(ctx context.Context, req *pb.RecordRequest) (*pb.RecordResponse, error) {
 	defer func() {
 		// if req.RecordFileName == "" execute ResetOverlay, else execute Reset
@@ -162,7 +162,7 @@ func (s *server) RecordFReset(ctx context.Context, req *pb.RecordRequest) (*pb.R
 			exp.ResetOverlay()
 		} else {
 			fmt.Println("Renaming the filename of the record file: ", req.RecordFileName)
-			exp.Reset()
+			exp.ResetStargz()
 		}
 	}()
 	fmt.Println("Wait for the container to run: ", req.ContainerName)

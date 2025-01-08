@@ -102,7 +102,7 @@ func main() {
 					imageSpecificFlags = []string{}
 				}
 				// Reset the src
-				exp.Reset()
+				exp.ResetStargz()
 
 				recordPFileName := fmt.Sprintf("/home/base/code/box/data_p/%s/%s_%d_%d.csv", alias, alias, i+1, bw)
 				recordFFileName := fmt.Sprintf("/home/base/code/box/data_f/%s/%s_%d_%d.csv", alias, alias, i+1, bw)

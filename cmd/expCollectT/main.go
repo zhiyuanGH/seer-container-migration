@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	
+
 	"os"
 	"time"
 
@@ -32,7 +32,7 @@ func main() {
 	src := flag.String("src", "192.168.116.148:50051", "Server address for source host")
 	dst := flag.String("dst", "192.168.116.149:50051", "Server address for destination host")
 	registryAddr := flag.String("registry", "192.168.116.150:50051", "Server address for registry host")
-	csvFilePath := flag.String("csv", "/home/base/code/box/data_t/dataCurrent.csv", "Path to CSV output file")
+	csvFilePath := flag.String("csv", "/home/base/code/box/data_t/seer.csv", "Path to CSV output file")
 	configPath := flag.String("config", "/home/base/code/container-joint-migration/config.json", "Path to the JSON config file")
 
 	flag.Parse()
@@ -107,11 +107,9 @@ func main() {
 					continue
 				}
 
-			
 				sleeptime := time.Duration(i+2) * time.Second
 				log.Printf("Waiting for time: %v\n", sleeptime)
 				time.Sleep(sleeptime)
-
 
 				log.Printf("Finish Waiting.")
 
