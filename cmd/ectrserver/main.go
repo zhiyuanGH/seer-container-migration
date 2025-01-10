@@ -159,7 +159,7 @@ func (s *server) RecordFReset(ctx context.Context, req *pb.RecordRequest) (*pb.R
 		// if req.RecordFileName == "" execute ResetOverlay, else execute Reset
 		if req.RecordFileName == "" {
 			fmt.Println("No record file to rename, reseting overlay")
-			exp.ResetStargz()
+			exp.ResetOverlay()
 		} else {
 			fmt.Println("Renaming the filename of the record file: ", req.RecordFileName)
 			exp.ResetStargz()
