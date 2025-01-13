@@ -105,7 +105,6 @@
         ]
     },
     "containerList": [
-        "192.168.116.150:5000/cnn:esgz",
         "192.168.116.150:5000/tensorflow:esgz"
     ],
     "containerList-migratable": [
@@ -142,7 +141,7 @@
         "192.168.116.150:5000/rethinkdb:esgz",
         "192.168.116.150:5000/alpine:esgz"
     ],
-    "iteration": 1,
+    "iteration": 2,
     "bandwidth": [
         100,
         200,
