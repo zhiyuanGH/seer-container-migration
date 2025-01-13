@@ -111,8 +111,7 @@
         ]
     },
     "containerList": [
-        "192.168.116.150:5000/ollama:esgz",
-        "192.168.116.150:5000/ruby:esgz"
+        "192.168.116.150:5000/tensorflow:esgz"
    
     ],
     "containerList-migratable": [
@@ -151,7 +150,7 @@
         "192.168.116.150:5000/rethinkdb:esgz",
         "192.168.116.150:5000/alpine:esgz"
     ],
-    "iteration": 2,
+    "iteration": 1,
     "bandwidth": [
         100,200,500,1000
 

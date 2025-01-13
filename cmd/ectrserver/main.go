@@ -166,7 +166,7 @@ func (s *server) RecordFReset(ctx context.Context, req *pb.RecordRequest) (*pb.R
 		}
 	}()
 	fmt.Println("Wait for the container to run: ", req.ContainerName)
-	timeoutDuration := 15 * time.Second
+	timeoutDuration := 900 * time.Second
 
 	if err := exp.Wait(req.ContainerName, timeoutDuration); err != nil {
 		return &pb.RecordResponse{Success: false}, err
