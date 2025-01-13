@@ -105,7 +105,7 @@
         ]
     },
     "containerList": [
-       
+        "192.168.116.150:5000/cnn:esgz",
         "192.168.116.150:5000/tensorflow:esgz"
     ],
     "containerList-migratable": [
@@ -113,12 +113,10 @@
         "192.168.116.150:5000/cnn:esgz",
         "192.168.116.150:5000/node:esgz",
         "192.168.116.150:5000/tensorflow:esgz",
-
         "192.168.116.150:5000/memcached:esgz",
         "192.168.116.150:5000/python-demo:esgz",
         "192.168.116.150:5000/golang-demo:esgz",
         "192.168.116.150:5000/nginx:esgz",
-
         "192.168.116.150:5000/alpine:esgz",
         "192.168.116.150:5000/redis:esgz",
         "192.168.116.150:5000/httpd:esgz",
@@ -144,8 +142,11 @@
         "192.168.116.150:5000/rethinkdb:esgz",
         "192.168.116.150:5000/alpine:esgz"
     ],
-    "iteration": 2,
+    "iteration": 1,
     "bandwidth": [
-       100,200,500,1000
+        100,
+        200,
+        500,
+        1000
     ]
 }
