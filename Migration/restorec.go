@@ -39,19 +39,21 @@ func RestoreContainer(checkpointData []byte, image string, name string, binds st
         "6379/tcp": struct{}{}, // Expose port 6379 for TCP
     }
 
-    // Define the port bindings (hostPort:containerPort)
-    portBindings := nat.PortMap{
-        "6379/tcp": []nat.PortBinding{
-            {
-                HostIP:   "0.0.0.0", // Bind to all interfaces
-                HostPort: "6379",    // Host port
-            },
-        },
-	}
+    // // Define the port bindings (hostPort:containerPort)
+    // portBindings := nat.PortMap{
+    //     "6379/tcp": []nat.PortBinding{
+    //         {
+    //             HostIP:   "0.0.0.0", // Bind to all interfaces
+    //             HostPort: "6379",    // Host port
+    //         },
+    //     },
+	// }
 
-    // Define resource constraints
-    memoryLimit := int64(2 * 1024 * 1024 * 1024) // 2GB in bytes
-    cpuLimit := int64(2 * 1e9)                    // 2 CPUs in nanoCPUs
+
+    // // Define resource constraints
+    // memoryLimit := int64(2 * 1024 * 1024 * 1024) // 2GB in bytes
+    // cpuLimit := int64(2 * 1e9)                    // 2 CPUs in nanoCPUs
+
 
 
 	newResp, err := cli.ContainerCreate(context.Background(), &container.Config{
@@ -62,11 +64,11 @@ func RestoreContainer(checkpointData []byte, image string, name string, binds st
 
 	}, &container.HostConfig{
 		Binds: bindList, // Use bindList which is nil if binds was empty
-		PortBindings: portBindings,
-		Resources: container.Resources{
-			Memory: memoryLimit,
-			NanoCPUs: cpuLimit,
-		},
+		// PortBindings: portBindings,
+		// Resources: container.Resources{
+		// 	Memory: memoryLimit,
+		// 	NanoCPUs: cpuLimit,
+		// },
 
 	}, nil, nil, name)
 	if err != nil {

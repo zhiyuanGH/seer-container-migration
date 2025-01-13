@@ -79,6 +79,7 @@ func main() {
 		for _, imageName := range cfg.ContainerList {
 			for i := 0; i < cfg.Iteration; i++ {
 				// Reset the source side
+
 				exp.ResetOverlay()
 
 				// Grab everything from cfg
@@ -106,6 +107,9 @@ func main() {
 					log.Printf("Error during 'docker run': %v", err)
 					continue
 				}
+
+				starttime := time.Now()
+				fmt.Println("Start time: ", starttime)
 
 				sleeptime := time.Duration(i+2) * time.Second
 				log.Printf("Waiting for time: %v\n", sleeptime)
@@ -136,6 +140,11 @@ func main() {
 					if _, err := recordClient.RecordFReset(context.Background(), recordReq); err != nil {
 						log.Printf("Record F failed: %v\n", err)
 					}
+					endtime := time.Now()
+					
+					timeElapsed := endtime.Sub(starttime)
+					fmt.Println("Time elapsed: ", timeElapsed)
+
 
 					BytesMigrateCheckpoint := res.BytesMigrateCheckpoint
 					BytesMigrateImage := res.BytesMigrateImage
@@ -158,12 +167,14 @@ func main() {
 						i+1,
 						bw,
 						sleeptime.Milliseconds(),
+
 						BytesMigrateCheckpoint,
 						BytesMigrateImage,
 						BytesMigrateVolume,
 						secondsMigrateCheckpoint,
 						secondsMigrateImage,
 						secondsMigrateVolume,
+						timeElapsed.Milliseconds(),
 					); err != nil {
 						log.Printf("Failed to record migration data: %v", err)
 					} else {
@@ -194,13 +205,13 @@ func recordMigrationData(
 	filePath, alias string,
 	iteration, bw int,
 	migrateWhen, bytesCheckpoint, bytesImage, bytesVolume int64,
-	secondsCheckpoint, secondsImage, secondsVolume int64,
+	secondsCheckpoint, secondsImage, secondsVolume, containerFinishTime int64,
 ) error {
 	// your existing CSV logic...
 	header := []string{
 		"Time", "Alias", "Iteration", "BandwidthLimit", "MigrateWhen",
 		"BytesMigrateCheckpoint", "BytesMigrateImage", "BytesMigrateVolume",
-		"MillisecondsMigrateCheckpoint", "MillisecondsMigrateImage", "MillisecondsMigrateVolume",
+		"MillisecondsMigrateCheckpoint", "MillisecondsMigrateImage", "MillisecondsMigrateVolume","ContainerFinishTime",
 	}
 	fileExists := true
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -246,6 +257,7 @@ func recordMigrationData(
 		fmt.Sprintf("%d", secondsCheckpoint),
 		fmt.Sprintf("%d", secondsImage),
 		fmt.Sprintf("%d", secondsVolume),
+		fmt.Sprintf("%d", containerFinishTime),
 	}
 
 	if err := writer.Write(record); err != nil {

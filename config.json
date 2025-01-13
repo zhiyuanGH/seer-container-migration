@@ -105,32 +105,20 @@
         ]
     },
     "containerList": [
-        "192.168.116.150:5000/gcc-demo:esgz",
         "192.168.116.150:5000/cnn:esgz",
-        "192.168.116.150:5000/node:esgz",
-        "192.168.116.150:5000/tensorflow:esgz",
-
-        "192.168.116.150:5000/memcached:esgz",
-        "192.168.116.150:5000/python-demo:esgz",
-        "192.168.116.150:5000/golang-demo:esgz",
-        "192.168.116.150:5000/nginx:esgz",
-
-        "192.168.116.150:5000/alpine:esgz",
-        "192.168.116.150:5000/redis:esgz",
-        "192.168.116.150:5000/httpd:esgz",
-        "192.168.116.150:5000/registry:esgz",
-        "192.168.116.150:5000/php-demo:esgz"
+        "192.168.116.150:5000/tensorflow:esgz"
     ],
     "containerList-migratable": [
         "192.168.116.150:5000/gcc-demo:esgz",
         "192.168.116.150:5000/cnn:esgz",
         "192.168.116.150:5000/node:esgz",
         "192.168.116.150:5000/tensorflow:esgz",
+
         "192.168.116.150:5000/memcached:esgz",
-        "192.168.116.150:5000/wordpress:esgz",
         "192.168.116.150:5000/python-demo:esgz",
         "192.168.116.150:5000/golang-demo:esgz",
         "192.168.116.150:5000/nginx:esgz",
+
         "192.168.116.150:5000/alpine:esgz",
         "192.168.116.150:5000/redis:esgz",
         "192.168.116.150:5000/httpd:esgz",
