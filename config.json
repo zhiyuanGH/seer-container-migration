@@ -75,7 +75,7 @@
             "--test-batch-size",
             "1000",
             "--epochs",
-            "30",
+            "15",
             "--lr",
             "0.1",
             "--gamma",
@@ -87,7 +87,7 @@
         "192.168.116.150:5000/postgres:esgz": [],
         "192.168.116.150:5000/tensorflow:esgz": [
             "--epochs",
-            "100"
+            "15"
         ],
         "192.168.116.150:5000/mysql:esgz": [],
         "192.168.116.150:5000/tomcat:esgz": [],
@@ -105,7 +105,7 @@
         ]
     },
     "containerList": [
-        "192.168.116.150:5000/cnn:esgz",
+       
         "192.168.116.150:5000/tensorflow:esgz"
     ],
     "containerList-migratable": [
@@ -144,7 +144,7 @@
         "192.168.116.150:5000/rethinkdb:esgz",
         "192.168.116.150:5000/alpine:esgz"
     ],
-    "iteration": 5,
+    "iteration": 2,
     "bandwidth": [
        100,200,500,1000
     ]
