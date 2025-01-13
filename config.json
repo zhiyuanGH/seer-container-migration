@@ -1,5 +1,9 @@
 {
     "imageFlags": {
+        "192.168.116.150:5000/ollama:esgz": [
+            "-v",
+            "ollama:/root/.ollama"
+        ],
         "192.168.116.150:5000/cnn:esgz": [
             "-v",
             "tmpv:/data"
@@ -62,7 +66,9 @@
         "192.168.116.150:5000/httpd:esgz": "httpd",
         "192.168.116.150:5000/registry:esgz": "registry",
         "192.168.116.150:5000/php-demo:esgz": "php-demo",
-        "192.168.116.150:5000/perl:esgz": "perl"
+        "192.168.116.150:5000/perl:esgz": "perl",
+        "192.168.116.150:5000/ruby:esgz": "ruby",
+        "192.168.116.150:5000/ollama:esgz": "ollama"
     },
     "containerCommands": {
         "192.168.116.150:5000/node:esgz": [],
@@ -105,7 +111,9 @@
         ]
     },
     "containerList": [
-        "192.168.116.150:5000/tensorflow:esgz"
+        "192.168.116.150:5000/ollama:esgz",
+        "192.168.116.150:5000/ruby:esgz"
+   
     ],
     "containerList-migratable": [
         "192.168.116.150:5000/gcc-demo:esgz",
@@ -120,7 +128,9 @@
         "192.168.116.150:5000/redis:esgz",
         "192.168.116.150:5000/httpd:esgz",
         "192.168.116.150:5000/registry:esgz",
-        "192.168.116.150:5000/php-demo:esgz"
+        "192.168.116.150:5000/php-demo:esgz",
+        "192.168.116.150:5000/ollama:esgz",
+        "192.168.116.150:5000/ruby:esgz"
     ],
     "containerList-full": [
         "192.168.116.150:5000/mysql:esgz",
@@ -143,9 +153,7 @@
     ],
     "iteration": 2,
     "bandwidth": [
-        100,
-        200,
-        500,
-        1000
+        100,200,500,1000
+
     ]
 }
