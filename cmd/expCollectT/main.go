@@ -80,7 +80,7 @@ func main() {
 			for i := 0; i < cfg.Iteration; i++ {
 				// Reset the source side
 
-				exp.ResetOverlay(false)
+				exp.ResetStargz()
 
 				// Grab everything from cfg
 				commandArgs, okCmd := cfg.ContainerCommands[imageName]

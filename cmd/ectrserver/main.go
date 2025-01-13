@@ -159,14 +159,14 @@ func (s *server) RecordFReset(ctx context.Context, req *pb.RecordRequest) (*pb.R
 		// if req.RecordFileName == "" execute ResetOverlay, else execute Reset
 		if req.RecordFileName == "" {
 			fmt.Println("No record file to rename, reseting overlay")
-			exp.ResetOverlay()
+			exp.ResetStargz()
 		} else {
 			fmt.Println("Renaming the filename of the record file: ", req.RecordFileName)
 			exp.ResetStargz()
 		}
 	}()
 	fmt.Println("Wait for the container to run: ", req.ContainerName)
-	timeoutDuration := 900 * time.Second
+	timeoutDuration := 15 * time.Second
 
 	if err := exp.Wait(req.ContainerName, timeoutDuration); err != nil {
 		return &pb.RecordResponse{Success: false}, err
