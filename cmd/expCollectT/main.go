@@ -110,7 +110,7 @@ func main() {
 
 				starttime := time.Now()
 				fmt.Println("Start time: ", starttime)
-				sleeptime := time.Duration(i+2) * time.Second
+				sleeptime := time.Duration(i+40) * time.Second
 				log.Printf("Waiting for time: %v\n", sleeptime)
 				time.Sleep(sleeptime)
 
