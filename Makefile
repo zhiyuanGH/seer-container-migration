@@ -1,8 +1,8 @@
 # Define the output binaries
-SERVER_BINARY=ectrserver
-CLIENT_BINARY=ectr
-EXP_COLLECT_PF_BINARY=ectrpf
-EXP_COLLECT_MIGRATION_TIME_BINARY=ectrt
+SERVER_BINARY=seerserver
+CLIENT_BINARY=seer
+EXP_COLLECT_PF_BINARY=seerpf
+EXP_COLLECT_MIGRATION_TIME_BINARY=seert
 
 # Define the source directories
 SERVER_SRC=./cmd/ectrserver/main.go
