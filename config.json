@@ -138,7 +138,7 @@
         "192.168.116.150:5000/rethinkdb:esgz",
         "192.168.116.150:5000/alpine:esgz"
     ],
-    "iteration": 4,
+    "iteration": 1,
     "bandwidth": [
         100,200,500,1000
 

@@ -14,41 +14,48 @@ import (
 // }
 
 func SetBW(bw int) error {
-	executor := &RealCommandExecutor{}
+    executor := &RealCommandExecutor{}
 
-	// Define the network interface and target IP
-	interfaceName := "ens33"
-	targetIP := "192.168.116.149"
+    // Define the network interface and target IP
+    interfaceName := "ens33"
+    targetIP := "192.168.116.149"
 
-	// Define the tc commands to set the bandwidth limit
-	commands := [][]string{
-		// Step 1: Delete existing qdisc on the interface
-		{"tc", "qdisc", "del", "dev", interfaceName, "root"},
+    // Define the tc commands to set the bandwidth limit and add latency
+    commands := [][]string{
+        // 1) Delete any existing root qdisc
+        {"tc", "qdisc", "del", "dev", interfaceName, "root"},
 
-		// Step 2: Add root htb qdisc with handle 1: and default class 30
-		{"tc", "qdisc", "add", "dev", interfaceName, "root", "handle", "1:", "htb", "default", "30"},
+        // 2) Add HTB root qdisc
+        {"tc", "qdisc", "add", "dev", interfaceName, "root", "handle", "1:", "htb", "default", "30"},
 
-		// Step 3: Add class 1:1 with the specified rate
-		{"tc", "class", "add", "dev", interfaceName, "parent", "1:", "classid", "1:1", "htb", "rate", fmt.Sprintf("%dmbit", bw)},
+        // 3) Create class 1:1 limited to ‘bw’ megabits
+        {"tc", "class", "add", "dev", interfaceName,
+            "parent", "1:", "classid", "1:1", "htb",
+            "rate", fmt.Sprintf("%dmbit", bw)},
 
-		// Step 4: Add filter to match traffic destined for targetIP and direct it to class 1:1
-		{"tc", "filter", "add", "dev", interfaceName, "protocol", "ip", "parent", "1:0", "prio", "1", "u32", "match", "ip", "dst", targetIP, "flowid", "1:1"},
-	}
+        // 4) Under that class, attach netem to add 100 ms delay (adds 100 ms one‑way;
+        //    so packets see roughly 200 ms RTT unless you also shape the reverse)
+        {"tc", "qdisc", "add", "dev", interfaceName,
+            "parent", "1:1", "handle", "10:", "netem",
+            "delay", "100ms"},
 
-	for _, args := range commands {
-		// Log the command being executed
-		log.Printf("Executing: sudo %v\n", args)
+        // 5) Filter traffic to your target IP into the shaped+delayed class
+        {"tc", "filter", "add", "dev", interfaceName,
+            "protocol", "ip", "parent", "1:0", "prio", "1",
+            "u32", "match", "ip", "dst", targetIP,
+            "flowid", "1:1"},
+    }
 
-		// Execute the command using the executor
-		stdout, stderr, err := executor.Execute(args)
+    for _, args := range commands {
+        log.Printf("Executing: sudo %v\n", args)
+        stdout, stderr, err := executor.Execute(args)
+        if err != nil {
+            log.Printf("Command failed: %v\nstdout: %s\nstderr: %s",
+                err, stdout, stderr)
+        }
+        time.Sleep(1 * time.Second)
+    }
 
-		if err != nil {
-			log.Printf("Command failed: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
-		}
-		// Optional: Wait for a short duration between commands to ensure they execute properly
-		time.Sleep(1 * time.Second)
-	}
-
-	log.Println("Bandwidth limit set successfully.")
-	return nil
+    log.Println("Bandwidth and latency configured successfully.")
+    return nil
 }
